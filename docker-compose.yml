@@ -1,0 +1,55 @@
+version: '3.9'
+
+services:
+  db:
+    # DB
+    image: mysql:8.0
+    container_name: moimmoim-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - moimmoim-network
+
+  backend:
+    # Spring Boot
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: moimmoim-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/moimmoim?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+    expose:
+      - "8080" # 내부 Docker 네트워크에만 8080 포트를 노출
+    depends_on:
+      - db
+    networks:
+      - moimmoim-network
+
+  frontend:
+  #React 정적 파일 서버
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: moimmoim-frontend
+    ports:
+      - "80:80" # 내 PC의 80번 포트로 들어오는 요청을  80번 포트로 연결해라.
+    depends_on:
+      - backend
+    networks:
+      - moimmoim-network
+
+volumes:
+  db_data:
+
+networks:
+  moimmoim-network:
+    driver: bridge

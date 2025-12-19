@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: backend
+  datasource:
+    datasource:
+      url: ${DB_URL}
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
+    jpa:
+      database-platform: org.hibernate.dialect.MySQL8Dialect
+      hibernate:
+        ddl-auto: update
+      show-sql: true
+      properties:
+        hibernate:
+          format_sql: true
+    jackson:
+      serialization:
+        write-dates-as-timestamps: false
+
+  server:
+    port: 8080
+#  logging:
+#    level:
+#      root: INFO
+#      org.hibernate.SQL: DEBUG
+  logging:
+    level:
+      # Spring Security의 모든 동작 및 필터 체인 정보를 디버그 레벨로 출력
+      org.springframework.security: DEBUG
+      # 웹 관련 로그도 확인하여 요청의 흐름을 추적 (선택적)
+      org.springframework.web: INFO
+
+
+
