@@ -2,7 +2,7 @@
 # Security
 # =====================
 .env.local
-.env.prov
+.env.prod
 *.pem
 
 # =====================
@@ -39,4 +39,3 @@ frontend/dist/
 # Nginx
 # =====================
 nginx/conf.d/
-!nginx/conf.d/default.conf
