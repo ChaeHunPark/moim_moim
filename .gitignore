@@ -1,7 +1,8 @@
 # =====================
 # Security
 # =====================
-.env
+.env.local
+.env.prov
 *.pem
 
 # =====================
@@ -33,3 +34,9 @@ frontend/dist/
 # Logs & OS
 # =====================
 *.log*
+
+# =====================
+# Nginx
+# =====================
+nginx/conf.d/
+!nginx/conf.d/default.conf
