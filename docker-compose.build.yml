@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME}/moim-backend:${BACKEND_TAG}
+
+  nginx:
+    build:
+      context: .
+      dockerfile: /nginx/Dockerfile_prod
+    image: ${DOCKER_USERNAME}/moim-nginx:${NGINX_TAG}
+
