@@ -15,7 +15,7 @@ function DataFetcher() {
         return response.text(); 
       })
       .then(data => {
-        setMessage(data);
+        setMessage(`${data} 깃 액션 자동화 체크`);
       })
       .catch(err => {
         console.error('API 호출 중 오류 발생:', err);
