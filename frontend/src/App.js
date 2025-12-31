@@ -7,7 +7,7 @@ function App() {
 
   <div>
       <HealthCheck/>
-      프론트 엔드 수정2
+      프론트 엔드 수정3
   </div>
   );
 }
