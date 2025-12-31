@@ -4,11 +4,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: ${DOCKER_USERNAME}/moim-backend:${BACKEND_TAG}
+    image: ${DOCKER_USERNAME}/moim-backend:latest
 
   nginx:
     build:
       context: .
       dockerfile: /nginx/Dockerfile_prod
-    image: ${DOCKER_USERNAME}/moim-nginx:${NGINX_TAG}
+    image: ${DOCKER_USERNAME}/moim-nginx:latest
 

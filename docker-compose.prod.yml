@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   nginx:
-    image: qcogns97/moim-nginx:0.1
+    image: qcogns97/moim-nginx:latest
     container_name: moim-nginx
     ports:
       - "80:80"
@@ -15,7 +15,7 @@ services:
     restart: always
 
   backend:
-    image: qcogns97/moim-backend:0.1
+    image: qcogns97/moim-backend:latest
     container_name: moim-backend
     env_file:
       - .env.prod
