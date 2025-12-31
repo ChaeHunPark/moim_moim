@@ -15,7 +15,7 @@ function DataFetcher() {
         return response.text(); 
       })
       .then(data => {
-        setMessage(`${data} 깃 액션 자동화 체크4`);
+        setMessage(`${data}`);
       })
       .catch(err => {
         console.error('API 호출 중 오류 발생:', err);
@@ -26,7 +26,7 @@ function DataFetcher() {
 
   return (
     <div>
-      <h1>Spring Boot API 통신 결과:</h1>
+      <h1>Spring Boot API 통신 결과: 깃 액션 자동화 체크6</h1>
       {error ? (
         <p style={{ color: 'red' }}>{error}</p>
       ) : (

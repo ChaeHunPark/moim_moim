@@ -4,7 +4,11 @@ import HealthCheck from './test/test.js';
 
 function App() {
   return (
-  <HealthCheck/>
+
+  <div>
+      <HealthCheck/>
+      프론트 엔드 수정
+  </div>
   );
 }
 
