@@ -28,10 +28,13 @@ jobs:
             echo "🛑 Stop containers"
             docker compose -f docker-compose.prod.yml down
 
-            echo "🏗 Build containers"
-            docker compose -f docker-compose.prod.yml build
+            echo "⬇️ Pull latest backend image"
+            docker pull qcogns97/moim-backend:latest
 
-            echo "▶️ Run containers"
+            echo "⬇️ Pull latest nginx image"
+            docker pull qcogns97/moim-nginx:latest
+
+            echo "▶️ Start containers"
             docker compose -f docker-compose.prod.yml up -d
 
             echo "✅ Deploy finished"
