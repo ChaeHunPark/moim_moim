@@ -19,9 +19,11 @@ const router = createBrowserRouter([
     
     path: "/register",
     // 현재는 리다이렉트
-    // element: <Navigate to="/" replace />,
+    element: <Navigate to="/" replace />,
     // 운영, 테스트시 주석 해제
-    element: <RegisterPage />,
+    // element: <RegisterPage />,
+
+
   }
 ]);
 
