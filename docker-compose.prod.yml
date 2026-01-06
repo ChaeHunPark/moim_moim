@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  nginx:
+    image: qcogns97/moim-nginx:latest
+    container_name: moim-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - backend
+    restart: always
+
+  backend:
+    image: qcogns97/moim-backend:latest
+    container_name: moim-backend
+    env_file:
+      - .env.prod
+    expose:
+      - "8080"
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: mysql:8.0
+    container_name: moim-db
+    env_file:
+      - .env.prod
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+
+  certbot:
+    image: certbot/certbot
+    container_name: moim-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: >
+      sh -c "trap exit TERM;
+      while :; do
+        certbot renew --webroot -w /var/www/certbot;
+        sleep 12h;
+      done"
+
+volumes:
+  db_data:

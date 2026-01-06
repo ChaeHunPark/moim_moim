@@ -1,4 +1,3 @@
-# backend/Dockerfile
 FROM gradle:8.5-jdk17 AS builder
 WORKDIR /app
 
@@ -7,13 +6,13 @@ COPY gradle gradle
 RUN gradle dependencies --no-daemon
 
 COPY . .
-RUN gradle clean build -x test --no-daemon
+RUN gradle clean bootJar -x test --no-daemon
 
 
 FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
 
-COPY --from=builder /app/build/libs/*.jar app.jar
+COPY --from=builder /app/build/libs/*SNAPSHOT.jar app.jar
 COPY wait-for-it.sh wait-for-it.sh
 RUN chmod +x wait-for-it.sh
 
