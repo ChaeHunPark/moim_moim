@@ -1,19 +1,21 @@
-package com.example.backend.config;
+package com.example.backend.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class SecurityConfig {
 
 
-    // 💡 생성자 추가: 이 Bean이 등록되었는지 확인하는 로그
-    public SecurityConfig() {
-        System.out.println("########## SecurityConfig Bean Loaded Successfully ##########");
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
 
@@ -23,13 +25,10 @@ public class SecurityConfig {
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(AbstractHttpConfigurer::disable)
 
                 .authorizeHttpRequests((auth) ->
-                        auth.requestMatchers("/**","/api/**").permitAll()
+                        auth.requestMatchers("/api/auth/**").permitAll()
                                 .anyRequest().permitAll())
-                                // 💡 2. Actuator 엔드포인트 접근을 인증 없이 허용
-                                //    (Health, Info 엔드포인트는 보통 허용합니다.)
 
 
                 .formLogin(AbstractHttpConfigurer::disable)   // 🔥 로그인 폼 자동 생성 막기

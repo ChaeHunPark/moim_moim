@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../../api/axios';
 import { REGIONS } from '../../constants/regions';
 import './RegisterForm.css';
 
@@ -14,13 +15,13 @@ const RegisterForm = () => {
 
   const [errors, setErrors] = useState({});
 
-  // 유효성 검사 함수
+  // 실시간 유효성 검사
   const validateField = (name, value) => {
     let error = '';
     if (name === 'email') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!value) error = '이메일을 입력해주세요.';
-      else if (!emailRegex.test(value)) error = '형식이 올바르지 않습니다.';
+      else if (!emailRegex.test(value)) error = '올바른 형식이 아닙니다.';
     }
     if (name === 'password') {
       if (!value) error = '비밀번호를 입력해주세요.';
@@ -28,14 +29,12 @@ const RegisterForm = () => {
     }
     if (name === 'nickname') {
       if (!value) error = '닉네임을 입력해주세요.';
-      else if (value.length < 2) error = '2자 이상 입력해주세요.';
     }
     if (name === 'age') {
-      if (!value) error = '나이를 입력해주세요.';
-      else if (Number(value) < 1) error = '정확한 나이를 입력해주세요.';
+      if (!value || Number(value) < 1) error = '정확한 나이를 입력해주세요.';
     }
-    if (name === 'region_id') {
-      if (!value) error = '지역을 선택해주세요.';
+    if (name === 'region_id' && !value) {
+      error = '지역을 선택해주세요.';
     }
 
     setErrors(prev => ({ ...prev, [name]: error }));
@@ -53,8 +52,10 @@ const RegisterForm = () => {
     validateField(name, value);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // 전체 필드 검사
     const newErrors = {};
     Object.keys(formData).forEach(key => {
       const error = validateField(key, formData[key]);
@@ -62,8 +63,18 @@ const RegisterForm = () => {
     });
 
     if (Object.keys(newErrors).length === 0) {
-      console.log('제출 데이터:', formData);
-      alert('가입을 축하합니다! 🎉');
+      try {
+        // 실제 전송: baseURL('/api') + '/auth/register'
+        const response = await api.post('/auth/register', formData);
+
+        if (response.status === 200 || response.status === 201) {
+          alert('가입을 축하합니다! 🎉');
+          // 가입 성공 시 로직 (예: 로그인 페이지 이동)
+        }
+      } catch (error) {
+        const msg = error.response?.data?.message || '서버 통신 에러';
+        alert(msg);
+      }
     } else {
       setErrors(newErrors);
     }
@@ -88,7 +99,7 @@ const RegisterForm = () => {
         <div className="form-group">
           <label>비밀번호</label>
           <input 
-            type="password" name="password" placeholder="8자 이상 입력"
+            type="password" name="password" placeholder="8자 이상"
             value={formData.password} onChange={handleChange} onBlur={handleBlur}
             className={errors.password ? 'input-error' : ''}
           />
@@ -132,7 +143,7 @@ const RegisterForm = () => {
         <div className="form-group">
           <label>자기소개 (선택)</label>
           <textarea 
-            name="bio" placeholder="관심사를 공유해보세요!"
+            name="bio" placeholder="관심사를 적어주세요!"
             value={formData.bio} onChange={handleChange}
           />
         </div>
