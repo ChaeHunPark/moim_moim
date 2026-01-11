@@ -43,7 +43,8 @@ public class AuthService {
         }
 
         // 3. 토큰 생성 및 반환
-        return jwtTokenProvider.createToken(member.getEmail());
+        // name을 사용해서 ROLE_USER를 그대로 넘긴다.
+        return jwtTokenProvider.createToken(member.getEmail(), member.getRole().name());
     }
 
 
@@ -66,7 +67,7 @@ public class AuthService {
                 .age(request.getAge())
                 .introduction(request.getBio()) // 프론트의 bio 필드 매핑
                 .region(region)
-                .role(Role.USER)            // 기본 권한: USER
+                .role(Role.ROLE_USER)            // 기본 권한: USER
                 .status(MemberStatus.ACTIVE) // 기본 상태: ACTIVE
                 .points(0)                  // 초기 포인트: 0
                 .level(1)                   // 초기 레벨: 1

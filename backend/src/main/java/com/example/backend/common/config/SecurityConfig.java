@@ -5,6 +5,8 @@ import com.example.backend.common.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -34,6 +36,8 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests((auth) ->
                         auth.requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/api/test/user").hasRole("USER")
+                                .requestMatchers("/api/test/admin").hasRole("ADMIN")
                                 .anyRequest().authenticated())
 
 
@@ -52,6 +56,14 @@ public class SecurityConfig {
 
 
         return http.build();
+    }
+
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        RoleHierarchyImpl roleHierarchy = new RoleHierarchyImpl();
+        // 🚩 ROLE_ADMIN은 ROLE_USER를 포함한다는 규칙 정의
+        roleHierarchy.setHierarchy("ROLE_ADMIN > ROLE_USER");
+        return roleHierarchy;
     }
 
 }

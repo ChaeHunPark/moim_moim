@@ -40,8 +40,8 @@ public class Member {
     private Region region; // 거주지역 (FK)
 
     @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "ENUM('USER', 'ADMIN')")
-    private Role role; // 권한
+    @Column(nullable = false, length = 20)
+    private Role role;
 
     private Integer points; // 활동 포인트
     private Integer level; // 레벨
@@ -62,4 +62,18 @@ public class Member {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt; // 수정일
+
+
+
+
+
+    // ROLE용 메서드
+    @Builder
+    public Member(String email, String password, Role role) {
+        this.email = email;
+        this.password = password;
+        this.role = (role == null) ? Role.ROLE_USER : role;
+    }
+
+
 }

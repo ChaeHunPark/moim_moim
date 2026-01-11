@@ -20,4 +20,16 @@ public class TestController {
                 "loginUser", email
         ));
     }
+
+    // 1. 모든 로그인한 유저(USER, ADMIN)가 접근 가능
+    @GetMapping("/user")
+    public ResponseEntity<String> userAccess(@AuthenticationPrincipal String email) {
+        return ResponseEntity.ok("일반 유저 접속 성공: " + email);
+    }
+
+    // 2. 관리자(ADMIN)만 접근 가능
+    @GetMapping("/admin")
+    public ResponseEntity<String> adminAccess(@AuthenticationPrincipal String email) {
+        return ResponseEntity.ok("관리자 접속 성공: " + email);
+    }
 }
