@@ -1,0 +1,63 @@
+/* src/pages/Login/LoginPage.css */
+
+/* 배경 전체를 감싸는 영역 */
+.login-page-background {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+}
+
+/* 회원가입의 .register-container와 동일한 스타일 */
+.login-container {
+  width: 100%;
+  max-width: 440px; /* 이 수치가 좌우 퍼짐을 막아줍니다 */
+  margin: 2rem auto;
+  padding: 3rem 2.5rem;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+}
+
+.login-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  text-align: center;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+}
+
+.login-subtitle {
+  text-align: center;
+  color: #888;
+  font-size: 0.95rem;
+  margin-bottom: 2.5rem;
+}
+
+.login-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.login-footer a {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 700;
+  margin-left: 0.5rem;
+}
+
+/* 모바일 대응도 회원가입과 동일하게 */
+@media (max-width: 480px) {
+  .login-container {
+    margin: 0;
+    padding: 2rem 1.2rem;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 100vh;
+  }
+}

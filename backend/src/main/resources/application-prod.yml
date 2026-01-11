@@ -24,3 +24,8 @@ logging:
   level:
     org.springframework.security: DEBUG
     org.springframework.web: INFO
+
+
+jwt:
+  # .env에서 가져온 JWT_SECRET 값을 주입
+  secret: ${JWT_SECRET}

@@ -1,5 +1,8 @@
 package com.example.backend.common.config;
 
+import com.example.backend.common.security.JwtAuthenticationFilter;
+import com.example.backend.common.security.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -8,9 +11,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtTokenProvider jwtTokenProvider;
 
 
     @Bean
@@ -21,14 +28,13 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        System.out.println("########## SecurityFilterChain Configuration Applied ##########");
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
 
                 .authorizeHttpRequests((auth) ->
                         auth.requestMatchers("/api/auth/**").permitAll()
-                                .anyRequest().permitAll())
+                                .anyRequest().authenticated())
 
 
                 .formLogin(AbstractHttpConfigurer::disable)   // 🔥 로그인 폼 자동 생성 막기
@@ -38,7 +44,9 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable) // <-- 추가
 
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+                        UsernamePasswordAuthenticationFilter.class);
 
 
 
