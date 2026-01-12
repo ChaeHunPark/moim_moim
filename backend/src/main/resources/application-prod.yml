@@ -6,7 +6,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -25,7 +25,6 @@ logging:
     org.springframework.security: DEBUG
     org.springframework.web: INFO
 
-
+# prod 환경에서는 JWT_SECRET값은  도커 컴포즈에서 읽는 env파일로 제공한다.
 jwt:
-  # .env에서 가져온 JWT_SECRET 값을 주입
   secret: ${JWT_SECRET}
