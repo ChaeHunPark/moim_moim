@@ -21,5 +21,16 @@ services:
     env_file:
       - .env
 
+  redis:
+    image: redis:7-alpine
+    container_name: my-redis
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    # 환경 변수를 사용하여 커맨드 구성
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+
 volumes:
   db_data:
+  redis_data:
