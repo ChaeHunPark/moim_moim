@@ -6,7 +6,6 @@ import com.example.backend.dto.RegisterRequest;
 import com.example.backend.dto.TokenResponseDto;
 import com.example.backend.service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;

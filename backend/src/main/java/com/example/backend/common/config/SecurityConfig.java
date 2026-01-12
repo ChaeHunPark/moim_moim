@@ -15,7 +15,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -37,12 +36,6 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        System.out.println("!!!!! Security Config Loaded !!!!!"); // 로드 확인용
-        System.out.println("!!!!! Security Config Loaded !!!!!"); // 로드 확인용
-        System.out.println("!!!!! Security Config Loaded !!!!!"); // 로드 확인용
-        System.out.println("!!!!! Security Config Loaded !!!!!"); // 로드 확인용
-        System.out.println("!!!!! Security Config Loaded !!!!!"); // 로드 확인용
-
         http
                 // 1. 모든 기본 로그인 방식 비활성화 (이게 확실히 돼야 임시 비번이 안 뜸)
                 .csrf(AbstractHttpConfigurer::disable)
