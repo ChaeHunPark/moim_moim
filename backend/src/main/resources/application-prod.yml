@@ -34,8 +34,12 @@ server:
 
 logging:
   level:
-    org.springframework.security: DEBUG
-    org.springframework.web: INFO
+    root: INFO                # 운영은 기본적으로 INFO
+    com.example.backend: INFO # 내 코드는 INFO (중요 에러만 확인)
+    org.springframework: WARN # 스프링 로그는 경고 이상만
+
+  file:
+    name: /home/ec2-user/logs/backend.log # 로그 파일 저장 경로
 
 # prod 환경에서는 JWT_SECRET값은  도커 컴포즈에서 읽는 env파일로 제공한다.
 jwt:
