@@ -42,7 +42,7 @@ services:
       - --collation-server=utf8mb4_unicode_ci
   redis:
     image: redis:7-alpine
-    container_name: my-redis
+    container_name: moim-redis
     ports:
       - "${REDIS_PORT}:6379"
     volumes:

@@ -1,5 +1,6 @@
 package com.example.backend.common.security;
 
+import com.example.backend.dto.TokenResponseDto;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -15,6 +16,11 @@ import java.security.Key;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+/*
+* 토큰 만들고, 해석, 검사 하는 역할만 수행
+*
+* */
+
 
 @Slf4j
 @Component
@@ -24,7 +30,9 @@ public class JwtTokenProvider {
     private String secretKey;
 
     private Key key;
-    private final long tokenValidityInMilliseconds = 1000L * 60 * 60; // 1시간
+
+    private final long ACCESS_TOKEN_VALIDITY = 1000L * 60 * 60; // 1시간
+    private final long REFRESH_TOKEN_VALIDITY = 1000L * 60 * 60 * 24 * 7; // 7일
 
     @PostConstruct
     protected void init() {
@@ -32,63 +40,88 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    // 토큰 생성
-    public String createToken(String email, String role) {
-        // 1. Claims 객체 생성 및 정보 삽입
+
+    /*
+     * 로그인 성공 시 호출, 이메일과 권한을 받아서 access, refresh를 만듬
+     * */
+    public TokenResponseDto createTokenSet(String email, String role) {
+        String accessToken = createToken(email, role, ACCESS_TOKEN_VALIDITY);
+        String refreshToken = createToken(email, role, REFRESH_TOKEN_VALIDITY);
+
+        return TokenResponseDto.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .refreshTokenExpirationTime(REFRESH_TOKEN_VALIDITY)
+                .build();
+    }
+
+    private String createToken(String email, String role, long validityMillis) {
         Claims claims = Jwts.claims().setSubject(email);
-        claims.put("role", role); // 여기에 "ROLE_USER" 문자열이
+        claims.put("role", role);
 
         Date now = new Date();
-        Date validity = new Date(now.getTime() + 3600000); // 1시간
-
-        // 2. 토큰 빌더 구성
         return Jwts.builder()
-                .setClaims(claims)      // 위에서 만든 role 포함 claims 세팅
+                .setClaims(claims)
                 .setIssuedAt(now)
-                .setExpiration(validity)
+                .setExpiration(new Date(now.getTime() + validityMillis))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // 인증 객체 생성 (중요: org.springframework.security.core.Authentication 사용)
+    /*
+    * 토큰에 있는 유저 정보를 꺼내서 Security가 이해할 수 있는 Auth로 변환
+    * */
     public Authentication getAuthentication(String token) {
-// 1. 토큰 파싱하여 Claims 추출
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        Claims claims = parseClaims(token);
 
-        // 2. Claims에서 "role" 꺼내기 (객체가 없으면 예외 처리)
         Object roleClaim = claims.get("role");
         if (roleClaim == null) {
             throw new RuntimeException("권한 정보가 없는 토큰입니다.");
         }
 
-        String roleName = roleClaim.toString();
-
-        // 3. 시큐리티 권한 객체 생성
         Collection<? extends GrantedAuthority> authorities =
-                Collections.singletonList(new SimpleGrantedAuthority(roleName));
+                Collections.singletonList(new SimpleGrantedAuthority(roleClaim.toString()));
 
-        // 4. 최종 인증 객체 반환 (Principal 자리에 email 주입)
         return new UsernamePasswordAuthenticationToken(claims.getSubject(), "", authorities);
     }
 
-    // 토큰 유효성 검사 (0.11 버전 parserBuilder 사용)
+
+    /*
+    * 토큰이 유효한지 검사
+    * */
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
-        } catch (SecurityException | MalformedJwtException e) {
-            log.error("잘못된 JWT 서명입니다.");
         } catch (ExpiredJwtException e) {
             log.error("만료된 JWT 토큰입니다.");
-        } catch (UnsupportedJwtException e) {
-            log.error("지원되지 않는 JWT 토큰입니다.");
-        } catch (IllegalArgumentException e) {
-            log.error("JWT 토큰이 잘못되었습니다.");
+        } catch (Exception e) {
+            log.error("유효하지 않은 JWT 토큰입니다: {}", e.getMessage());
         }
         return false;
     }
+
+    public String getUserEmail(String token) {
+        return parseClaims(token).getSubject();
+    }
+
+    private Claims parseClaims(String token) {
+        try {
+            return Jwts.parserBuilder().setSigningKey(key).build()
+                    .parseClaimsJws(token).getBody();
+        } catch (ExpiredJwtException e) {
+            return e.getClaims();
+        }
+    }
+
+    public Long getExpiration(String accessToken) {
+        // 토큰의 만료 시간 추출
+        Date expiration = Jwts.parserBuilder().setSigningKey(key).build()
+                .parseClaimsJws(accessToken).getBody().getExpiration();
+
+        // 현재 시간과의 차이 계산
+        long now = new Date().getTime();
+        return (expiration.getTime() - now);
+    }
+
 }

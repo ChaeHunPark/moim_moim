@@ -10,20 +10,39 @@ const api = axios.create({
 });
 
 // [추가] 요청 인터셉터: 서버로 보내기 직전에 가로채서 토큰을 넣어줍니다.
-api.interceptors.request.use(
-  (config) => {
-    // 로컬 스토리지에서 토큰을 가져옵니다.
-    const token = localStorage.getItem('accessToken');
-    
-    // 토큰이 있다면 Authorization 헤더에 Bearer 타입으로 추가합니다.
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.response.use(
+    (response) => response, // 성공 시 그대로 반환
+    async (error) => {
+        const originalRequest = error.config;
+
+        // 에러 코드가 401이고, 아직 재시도를 하지 않은 요청이라면
+        if (error.response.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true; // 무한 루프 방지 플래그
+
+            try {
+                // 서버에 재발급 요청 (쿠키의 Refresh Token이 자동으로 전송됨)
+                const res = await axios.post('/api/auth/reissue', {}, { withCredentials: true });
+
+                if (res.status === 200) {
+                    const newAccessToken = res.data.accessToken;
+                    
+                    // 새 토큰 저장
+                    localStorage.setItem('accessToken', newAccessToken);
+                    
+                    // 원래 요청의 헤더를 새 토큰으로 교체 후 다시 시도
+                    originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+                    return api(originalRequest);
+                }
+            } catch (reissueError) {
+                // 리프레시 토큰도 만료된 경우
+                console.error("세션이 만료되었습니다. 다시 로그인해주세요.");
+                localStorage.removeItem('accessToken');
+                window.location.href = '/login'; 
+                return Promise.reject(reissueError);
+            }
+        }
+        return Promise.reject(error);
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
 );
 
 // [추가] 응답 인터셉터: 서버 응답을 받을 때 가로채서 에러 처리를 합니다.

@@ -5,21 +5,28 @@ import com.example.backend.common.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final StringRedisTemplate redisTemplate;
+
 
 
     @Bean
@@ -30,30 +37,34 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        System.out.println("!!!!! Security Config Loaded !!!!!"); // 로드 확인용
+        System.out.println("!!!!! Security Config Loaded !!!!!"); // 로드 확인용
+        System.out.println("!!!!! Security Config Loaded !!!!!"); // 로드 확인용
+        System.out.println("!!!!! Security Config Loaded !!!!!"); // 로드 확인용
+        System.out.println("!!!!! Security Config Loaded !!!!!"); // 로드 확인용
 
         http
+                // 1. 모든 기본 로그인 방식 비활성화 (이게 확실히 돼야 임시 비번이 안 뜸)
                 .csrf(AbstractHttpConfigurer::disable)
-
-                .authorizeHttpRequests((auth) ->
-                        auth.requestMatchers("/api/auth/**").permitAll()
-                                .requestMatchers("/api/test/user").hasRole("USER")
-                                .requestMatchers("/api/test/admin").hasRole("ADMIN")
-                                .anyRequest().authenticated())
-
-
-                .formLogin(AbstractHttpConfigurer::disable)   // 🔥 로그인 폼 자동 생성 막기
-
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
 
-                .httpBasic(AbstractHttpConfigurer::disable) // <-- 추가
-
+                // 2. 세션 사용 안 함
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+
+                // 3. 권한 설정
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll() // 여기 경로가 맞는지 확인 (예: /api/login 인지 /api/auth/login 인지)
+                        .requestMatchers("/api/test/user").hasRole("USER")
+                        .requestMatchers("/api/test/admin").hasRole("ADMIN")
+                        .anyRequest().authenticated()
+                )
+
+                // 4. JWT 필터 배치
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, redisTemplate),
                         UsernamePasswordAuthenticationFilter.class);
-
-
-
 
         return http.build();
     }
@@ -64,6 +75,13 @@ public class SecurityConfig {
         // 🚩 ROLE_ADMIN은 ROLE_USER를 포함한다는 규칙 정의
         roleHierarchy.setHierarchy("ROLE_ADMIN > ROLE_USER");
         return roleHierarchy;
+    }
+
+
+    // 임시 비밀번호 생성 방지
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return new InMemoryUserDetailsManager();
     }
 
 }
