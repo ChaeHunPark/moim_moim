@@ -41,36 +41,35 @@ public class AuthService {
 
     @Transactional
     public TokenResponseDto login(String email, String password) {
-        log.info("로그인 시도 - Email: {}", email);
+        log.info("1. 로그인 시도 시작 - Email: {}", email);
 
-        // 1. 사용자 조회
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> {
-                    log.warn("로그인 실패 - 존재하지 않는 이메일: {}", email);
-                    return new RuntimeException("가입되지 않은 이메일입니다.");
-                });
+                .orElseThrow(() -> new RuntimeException("가입되지 않은 이메일입니다."));
 
-        // 2. 비밀번호 확인 (Edge Cases 처리)
+        log.info("2. 사용자 조회 완료: {}", member.getEmail());
+
         if (!passwordEncoder.matches(password, member.getPassword())) {
-            log.warn("로그인 실패 - 비밀번호 불일치: {}", email);
+            log.warn("3. 비밀번호 불일치: {}", email);
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
+        log.info("4. 비밀번호 일치 확인");
 
-        String role = member.getRole().name();
+        TokenResponseDto tokenDto = jwtTokenProvider.createTokenSet(member.getId(), email, member.getRole().name());
+        log.info("5. JWT 토큰 생성 완료");
 
-        // [수정] 이메일, 역할뿐만 아니라 member.getId()를 함께 전달
-        // (createTokenSet 메서드 시그니처에 Long id 파라미터를 추가해야 합니다)
-        TokenResponseDto tokenDto = jwtTokenProvider.createTokenSet(member.getId(), email, role);
+        try {
+            redisTemplate.opsForValue().set(
+                    REDIS_RT_PREFIX + email,
+                    tokenDto.getRefreshToken(),
+                    tokenDto.getRefreshTokenExpirationTime(),
+                    TimeUnit.MILLISECONDS
+            );
+            log.info("6. Redis 저장 완료");
+        } catch (Exception e) {
+            log.error("⚠️ Redis 저장 중 에러 발생: {}", e.getMessage());
+            throw e; // 여기서 터지면 401/500의 원인이 됨
+        }
 
-        // 5. Redis에 Refresh Token 저장
-        redisTemplate.opsForValue().set(
-                REDIS_RT_PREFIX + email,
-                tokenDto.getRefreshToken(),
-                tokenDto.getRefreshTokenExpirationTime(),
-                TimeUnit.MILLISECONDS
-        );
-
-        log.info("로그인 성공 - Email: {}, Role: {}, ID: {}", email, role, member.getId());
         return tokenDto;
     }
 
