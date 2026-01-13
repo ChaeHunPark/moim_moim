@@ -6,6 +6,7 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    withCredentials: true, // 💡 쿠키 전송 및 수신 허용
     timeout: 5000,
 });
 
