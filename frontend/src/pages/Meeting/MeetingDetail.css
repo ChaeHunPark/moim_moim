@@ -1,0 +1,109 @@
+/* MeetingDetail.css */
+
+/* 전체 컨테이너 */
+.meeting-container {
+    max-width: 850px;
+    margin: 50px auto;
+    padding: 40px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    color: #333;
+    line-height: 1.6;
+}
+
+/* 상단 헤더 */
+.meeting-header {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 25px;
+    margin-bottom: 30px;
+}
+
+.meeting-category {
+    display: inline-block;
+    color: #007aff;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.meeting-title {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 15px 0;
+    letter-spacing: -0.5px;
+}
+
+.meeting-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #888;
+}
+
+/* 정보 요약 섹션 */
+.meeting-info-board {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 35px;
+}
+
+.info-box label {
+    display: block;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+.info-box span {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.info-box.full {
+    grid-column: span 2;
+}
+
+/* 본문 내용 */
+.meeting-content {
+    font-size: 17px;
+    color: #444;
+    white-space: pre-wrap; /* 줄바꿈 유지 */
+    min-height: 250px;
+    padding: 10px 0;
+}
+
+/* 참여 버튼 영역 */
+.meeting-footer {
+    text-align: center;
+    margin-top: 50px;
+    padding-top: 30px;
+    border-top: 1px solid #eee;
+}
+
+.btn-apply {
+    background: #007aff;
+    color: white;
+    border: none;
+    padding: 16px 60px;
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-apply:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+}
+
+.btn-apply:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}

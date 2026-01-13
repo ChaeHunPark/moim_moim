@@ -14,6 +14,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
+
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -48,14 +50,17 @@ public class AuthService {
                     return new RuntimeException("가입되지 않은 이메일입니다.");
                 });
 
-        // 2. 비밀번호 확인
+        // 2. 비밀번호 확인 (Edge Cases 처리)
         if (!passwordEncoder.matches(password, member.getPassword())) {
             log.warn("로그인 실패 - 비밀번호 불일치: {}", email);
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
 
         String role = member.getRole().name();
-        TokenResponseDto tokenDto = jwtTokenProvider.createTokenSet(email, role);
+
+        // [수정] 이메일, 역할뿐만 아니라 member.getId()를 함께 전달
+        // (createTokenSet 메서드 시그니처에 Long id 파라미터를 추가해야 합니다)
+        TokenResponseDto tokenDto = jwtTokenProvider.createTokenSet(member.getId(), email, role);
 
         // 5. Redis에 Refresh Token 저장
         redisTemplate.opsForValue().set(
@@ -65,7 +70,7 @@ public class AuthService {
                 TimeUnit.MILLISECONDS
         );
 
-        log.info("로그인 성공 - Email: {}, Role: {}", email, role);
+        log.info("로그인 성공 - Email: {}, Role: {}, ID: {}", email, role, member.getId());
         return tokenDto;
     }
 
@@ -105,30 +110,41 @@ public class AuthService {
     public TokenResponseDto reissue(String refreshToken) {
         log.info("토큰 재발급 시도");
 
-        // 1. 검증
+        // 1. Refresh Token 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             log.warn("재발급 실패 - 유효하지 않은 리프레시 토큰");
             throw new RuntimeException("리프레시 토큰이 유효하지 않습니다.");
         }
 
+        // 2. 이메일 추출 및 Redis 저장값 확인
         String email = jwtTokenProvider.getUserEmail(refreshToken);
         String savedToken = redisTemplate.opsForValue().get(REDIS_RT_PREFIX + email);
 
-        // 3. 보안 체크 (중요: 탈취 시나리오 로그)
-        if (savedToken == null) {
-            log.warn("재발급 실패 - Redis에 저장된 토큰이 없음 (만료 혹은 로그아웃 상태): {}", email);
+        // 3. 보안 및 만료 체크 (Edge Cases)
+        if (ObjectUtils.isEmpty(savedToken)) {
+            log.warn("재발급 실패 - Redis에 저장된 토큰이 없음: {}", email);
             throw new RuntimeException("토큰 정보가 만료되었습니다.");
         }
 
         if (!savedToken.equals(refreshToken)) {
-            log.error("보안 경고 - 리프레시 토큰 불일치! 토큰 탈취 의심: {}", email);
-            redisTemplate.delete(REDIS_RT_PREFIX + email); // 보안상 즉시 삭제
+            log.error("보안 경고 - 토큰 불일치! 탈취 의심으로 인한 즉시 삭제: {}", email);
+            redisTemplate.delete(REDIS_RT_PREFIX + email);
             throw new RuntimeException("토큰 정보가 일치하지 않습니다.");
         }
 
-        // 실제 권한 조회가 필요하다면 DB 조회가 필요하겠지만, 여기서는 USER로 고정 혹은 토큰에서 추출
-        TokenResponseDto newTokenSet = jwtTokenProvider.createTokenSet(email, "ROLE_USER");
+        // [핵심 수정] 4. DB 조회를 통해 최신 ID와 권한 정보를 가져옴
+        // (재발급 시점에도 정확한 ID를 토큰에 심어주기 위함)
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
+        // 5. 새로운 토큰 세트 생성 (ID 포함)
+        TokenResponseDto newTokenSet = jwtTokenProvider.createTokenSet(
+                member.getId(),
+                member.getEmail(),
+                member.getRole().name()
+        );
+
+        // 6. Redis 리프레시 토큰 갱신
         redisTemplate.opsForValue().set(
                 REDIS_RT_PREFIX + email,
                 newTokenSet.getRefreshToken(),
@@ -136,7 +152,7 @@ public class AuthService {
                 TimeUnit.MILLISECONDS
         );
 
-        log.info("토큰 재발급 완료 - Email: {}", email);
+        log.info("토큰 재발급 완료 - Email: {}, MemberID: {}", email, member.getId());
         return newTokenSet;
     }
 

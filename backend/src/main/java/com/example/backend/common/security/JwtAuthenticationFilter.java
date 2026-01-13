@@ -37,12 +37,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
 
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-            // [추가] Redis 블랙리스트에 해당 토큰이 있는지 확인
+            // [체크] Redis 블랙리스트 확인
             String isLogout = redisTemplate.opsForValue().get("BL:" + token);
 
             if (ObjectUtils.isEmpty(isLogout)) {
+                // [수정] getAuthentication 메서드가 내부적으로 ID(Long)를 Principal에 담도록 구현되어야 함
                 Authentication auth = jwtTokenProvider.getAuthentication(token);
                 SecurityContextHolder.getContext().setAuthentication(auth);
+
+                log.debug("인증 완료 - Principal: {}", auth.getPrincipal());
             } else {
                 log.warn("로그아웃된 토큰으로 접근 시도: {}", token);
             }

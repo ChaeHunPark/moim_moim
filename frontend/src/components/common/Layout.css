@@ -1,0 +1,132 @@
+/* src/components/Layout/Layout.css */
+
+/* Header Styles */
+.main-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e1e4e8;
+  height: 70px;
+  display: flex;
+  align-items: center;
+}
+
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1c7ed6;
+  text-decoration: none;
+  letter-spacing: -1px;
+}
+
+.nav-menu {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+}
+
+.nav-item {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #495057;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.nav-item:hover {
+  color: #1c7ed6;
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-login {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 1px solid #dee2e6;
+  background: #fff;
+}
+
+.btn-create {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: #1c7ed6;
+  color: #fff;
+  border: none;
+}
+
+/* Footer Styles */
+.main-footer {
+  background-color: #fff;
+  border-top: 1px solid #e1e4e8;
+  padding: 60px 20px;
+  margin-top: auto;
+}
+
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 40px;
+}
+
+.footer-info h2 {
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+  color: #1c7ed6;
+}
+
+.footer-links h4 {
+  margin-bottom: 20px;
+  color: #212529;
+}
+
+.footer-links ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-links a {
+  color: #868e96;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.footer-bottom {
+  max-width: 1200px;
+  margin: 40px auto 0;
+  padding-top: 20px;
+  border-top: 1px solid #f1f3f5;
+  color: #adb5bd;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .nav-menu { display: none; } /* 모바일용 햄버거 메뉴는 추후 구현 */
+  .footer-inner { grid-template-columns: 1fr; }
+}

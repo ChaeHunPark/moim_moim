@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -51,6 +52,7 @@ public class SecurityConfig {
                 // 3. 권한 설정
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // 여기 경로가 맞는지 확인 (예: /api/login 인지 /api/auth/login 인지)
+                        .requestMatchers(HttpMethod.GET, "/api/meetings/**").permitAll()
                         .requestMatchers("/api/test/user").hasRole("USER")
                         .requestMatchers("/api/test/admin").hasRole("ADMIN")
                         .anyRequest().authenticated()

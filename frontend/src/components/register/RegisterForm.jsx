@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import api from '../../api/axios';
+import { useNavigate } from 'react-router-dom'
 import { REGIONS } from '../../constants/regions';
 import './RegisterForm.css';
 
 const RegisterForm = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -70,6 +72,7 @@ const RegisterForm = () => {
         if (response.status === 200 || response.status === 201) {
           alert('가입을 축하합니다! 🎉');
           // 가입 성공 시 로직 (예: 로그인 페이지 이동)
+          navigate('/login');
         }
       } catch (error) {
         const msg = error.response?.data?.message || '서버 통신 에러';
