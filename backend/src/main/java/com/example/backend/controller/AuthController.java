@@ -41,6 +41,7 @@ public class AuthController {
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", tokenDto.getRefreshToken())
                 .httpOnly(true)    // JavaScript에서 접근 불가 (XSS 방지)
                 .secure(true)      // HTTPS에서만 전송
+                .sameSite("None") // 크로스 도메인/사이트 간 쿠키 전송 허용 추가**
                 .path("/")         // 모든 경로에서 유효
                 .maxAge(tokenDto.getRefreshTokenExpirationTime() / 1000) // 초 단위 설정
                 .sameSite("Strict") // CSRF 방지
@@ -63,6 +64,7 @@ public class AuthController {
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", tokenDto.getRefreshToken())
                 .httpOnly(true)
                 .secure(true) // 로컬 테스트 시 false 고려
+                .sameSite("None") // 크로스 도메인/사이트 간 쿠키 전송 허용 추가**
                 .path("/")
                 .maxAge(tokenDto.getRefreshTokenExpirationTime() / 1000)
                 .sameSite("Strict")
