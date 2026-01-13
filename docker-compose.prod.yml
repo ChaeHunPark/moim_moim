@@ -2,6 +2,8 @@ version: "3.9"
 
 services:
   nginx:
+    networks:
+      - moim-network
     image: qcogns97/moim-nginx:latest
     container_name: moim-nginx
     ports:
@@ -15,6 +17,8 @@ services:
     restart: always
 
   backend:
+    networks:
+      - moim-network
     image: qcogns97/moim-backend:latest
     container_name: moim-backend
     env_file:
@@ -27,6 +31,8 @@ services:
     restart: always
 
   db:
+    networks:
+      - moim-network
     image: mysql:8.0
     container_name: moim-db
     env_file:
@@ -42,6 +48,8 @@ services:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
   redis:
+    networks:
+      - moim-network
     image: redis:7-alpine
     container_name: moim-redis
     ports:
@@ -52,6 +60,8 @@ services:
     command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
 
   certbot:
+    networks:
+      - moim-network
     image: certbot/certbot
     container_name: moim-certbot
     volumes:
@@ -67,3 +77,7 @@ services:
 volumes:
   db_data:
   redis_data:
+
+networks:
+  moim-network:
+    driver: bridge
