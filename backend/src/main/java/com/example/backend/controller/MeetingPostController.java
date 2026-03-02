@@ -1,5 +1,6 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.MeetingCreateResponse;
 import com.example.backend.dto.MeetingDetailResponse;
 import com.example.backend.dto.MeetingPostCreateRequest;
 import com.example.backend.service.MeetingService;
@@ -24,7 +25,7 @@ public class MeetingPostController {
      * POST /api/meetings
      */
     @PostMapping
-    public ResponseEntity<Long> createMeeting(
+    public ResponseEntity<MeetingCreateResponse> createMeeting(
             @Valid @RequestBody MeetingPostCreateRequest request,
             @AuthenticationPrincipal Long memberId // JWT 필터에서 저장한 Principal (Member ID)
     ) {
@@ -32,7 +33,7 @@ public class MeetingPostController {
         Long savedMeetingId = meetingService.createMeeting(request, memberId);
 
         // 2. 생성된 모임 ID와 함께 201 Created 응답 반환
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedMeetingId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new MeetingCreateResponse(savedMeetingId));
     }
 
     /**

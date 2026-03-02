@@ -86,7 +86,9 @@ const MeetingCreate = () => {
 
             if (response.status === 201 || response.status === 200) {
                 alert("🎉 모임이 성공적으로 개설되었습니다!");
-                navigate(`/meetings/${response.data}`); // 상세 페이지로 이동 (ID 반환 가정)
+                const newId = response.data.id;
+
+                navigate(`/meetings/${newId}`); // 상세 페이지로 이동 (ID 반환 가정)
             }
         } catch (error) {
             // 4. 에러 상황 처리 (Edge Cases)

@@ -1,16 +1,15 @@
 package com.example.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
+@AllArgsConstructor
 public class MeetingPost extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,6 +24,7 @@ public class MeetingPost extends BaseTimeEntity {
     @Column(nullable = false)
     private int capacity; // maxParticipants 대신 capacity로 통일
 
+    @Builder.Default
     @Column(nullable = false)
     private int currentParticipants = 1;
 
