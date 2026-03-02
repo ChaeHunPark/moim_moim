@@ -30,6 +30,8 @@ services:
       - redis_data:/data
     # 환경 변수를 사용하여 커맨드 구성
     command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    env_file:
+      - .env
 
 volumes:
   db_data:

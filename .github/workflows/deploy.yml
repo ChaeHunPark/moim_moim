@@ -35,6 +35,6 @@ jobs:
             docker pull qcogns97/moim-nginx:latest
 
             echo "▶️ Start containers"
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose --env-file .env.prod -f docker-compose.prod.yml up -d
 
             echo "✅ Deploy finished"
