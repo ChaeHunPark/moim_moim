@@ -1,0 +1,1 @@
+ALTER TABLE participation ADD COLUMN join_reason VARCHAR(255) NOT NULL;

@@ -1,0 +1,87 @@
+/* ParticipationForm.css */
+
+.participation-wrapper {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 32px;
+    background: #ffffff;
+    border-radius: 24px;
+    border: 1px solid #e1e4e8;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    animation: fadeIn 0.6s ease-out;
+}
+
+.participation-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 8px;
+}
+
+.participation-subtitle {
+    font-size: 0.95rem;
+    color: #868e96;
+    margin-bottom: 24px;
+}
+
+/* 입력 영역 스타일 */
+.participation-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.participation-textarea {
+    width: 100%;
+    min-height: 160px;
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid #e1e4e8;
+    background-color: #f8f9fa;
+    font-size: 1rem;
+    color: #495057;
+    transition: all 0.2s ease;
+    resize: none;
+    line-height: 1.6;
+}
+
+.participation-textarea:focus {
+    outline: none;
+    border-color: #1c7ed6;
+    background-color: #fff;
+    box-shadow: 0 0 0 4px rgba(28, 126, 214, 0.1);
+}
+
+/* 제출 버튼 스타일 */
+.submit-button {
+    padding: 16px;
+    border-radius: 16px;
+    border: none;
+    background: #1c7ed6;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.submit-button:hover:not(:disabled) {
+    background: #1864ab;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(28, 126, 214, 0.2);
+}
+
+.submit-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.submit-button:disabled {
+    background: #adb5bd;
+    cursor: not-allowed;
+}
+
+/* 애니메이션 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -67,7 +67,9 @@ public class AuthService {
             log.info("6. Redis 저장 완료");
         } catch (Exception e) {
             log.error("⚠️ Redis 저장 중 에러 발생: {}", e.getMessage());
+            e.printStackTrace();
             throw e; // 여기서 터지면 401/500의 원인이 됨
+
         }
 
         return tokenDto;

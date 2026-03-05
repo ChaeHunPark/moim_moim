@@ -2,6 +2,7 @@ package com.example.backend.service;
 
 import com.example.backend.dto.MeetingDetailResponse;
 import com.example.backend.dto.MeetingPostCreateRequest;
+import com.example.backend.dto.ParticipationRequestDto;
 import com.example.backend.entity.Category;
 import com.example.backend.entity.MeetingPost;
 import com.example.backend.entity.Member;
@@ -44,7 +45,8 @@ public class MeetingService {
                 .member(creator)
                 .meetingPost(savedPost)
                 .role(ParticipationRole.ORGANIZER)
-                .status(ParticipationStatus.APPROVED)
+                .status(ParticipationStatus.ACCEPTED)
+                .joinReason("모임 개설자 자동 등록")
                 .build();
 
         participationRepository.save(organizer);
@@ -73,4 +75,6 @@ public class MeetingService {
                 .createdAt(post.getCreatedAt())
                 .build();
     }
+
+
 }

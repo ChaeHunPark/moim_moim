@@ -1,0 +1,1 @@
+ALTER TABLE participation ADD COLUMN rating_given TINYINT(1) DEFAULT 0;

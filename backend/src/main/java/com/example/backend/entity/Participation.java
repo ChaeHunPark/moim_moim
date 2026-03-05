@@ -18,27 +18,35 @@ public class Participation extends BaseTimeEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meeting_post_id", nullable = false)
     private MeetingPost meetingPost;
 
-    @Enumerated(EnumType.STRING) // DB에 문자열로 저장 (가독성 및 안전성)
-    @Column(nullable = false)
-    private ParticipationRole role;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ParticipationStatus status;
+    private ParticipationRole role; // PARTICIPANT, ORGANIZER
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ParticipationStatus status; // APPLIED, CANCELLED, ACCEPTED, REJECTED, WAITING
+
+    @Column(columnDefinition = "TEXT")
+    private String joinReason;
+
+    @Column(nullable = false)
+    private boolean ratingGiven = false; // 기본값 false
 
     @Builder
-    public Participation(Member member, MeetingPost meetingPost,
-                         ParticipationRole role, ParticipationStatus status) {
-        this.member = member;
+    public Participation(MeetingPost meetingPost, Member member, ParticipationRole role,
+                         ParticipationStatus status, String joinReason) {
         this.meetingPost = meetingPost;
+        this.member = member;
         this.role = role;
         this.status = status;
+        this.joinReason = joinReason;
+        this.ratingGiven = false;
     }
 }
