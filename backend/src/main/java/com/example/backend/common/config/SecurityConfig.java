@@ -56,6 +56,7 @@ public class SecurityConfig {
 
                 // 3. 권한 설정
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/logout").authenticated()
                         .requestMatchers("/api/auth/**").permitAll() // 여기 경로가 맞는지 확인 (예: /api/login 인지 /api/auth/login 인지)
                         .requestMatchers(HttpMethod.GET, "/api/meetings/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()

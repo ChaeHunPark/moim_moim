@@ -17,12 +17,19 @@ const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         // 토큰이 필요 없는 경로 리스트
-        const skipUrls = ['/auth/login', '/auth/signup', '/auth/reissue'];
+        const skipUrls = ['/auth/login',
+            '/auth/signup',
+            '/auth/reissue'];
 
         // 현재 요청 URL에 위 경로가 포함되어 있는지 확인
         const isSkipped = skipUrls.some(url => config.url && config.url.includes(url));
 
-        if (!isSkipped) {
+        // /meetings 경로에 대한 조건부 처리
+        // GET 요청이면 토큰 없이 통과, 그 외(POST, PUT, DELETE)는 토큰 필요
+        const isMeetingsGet = config.url && config.url.includes('/meetings') && config.method === 'get';
+        
+        // 공개 URL이 아니고, '모임 조회(GET)'도 아니라면 토큰을 실어 보낸다.
+        if (!isSkipped && !isMeetingsGet) {
             const token = localStorage.getItem('accessToken');
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;

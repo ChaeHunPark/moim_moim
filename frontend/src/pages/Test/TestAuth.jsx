@@ -19,7 +19,6 @@ const TestAuth = () => {
         role: roleType,
         data: response.data
       });
-      console.log(`${roleType} 권한 호출 성공:`, response.data);
     } catch (err) {
       const status = err.response?.status;
       let message = '정보를 가져오는데 실패했습니다.';
