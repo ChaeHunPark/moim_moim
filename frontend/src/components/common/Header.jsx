@@ -31,7 +31,7 @@ const Header = () => {
         
         <nav>
           <ul className="nav-menu">
-            <li className="nav-item">모임 찾기</li>
+            <li className="nav-item" onClick={() => navigate('/meetings')}>모임 찾기</li>
             <li className="nav-item">커뮤니티</li>
             {/* 로그인했을 때만 '내 모임' 메뉴 노출 */}
             {isLoggedIn && <li className="nav-item">내 모임</li>}

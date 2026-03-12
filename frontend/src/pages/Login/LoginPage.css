@@ -1,44 +1,60 @@
 /* src/pages/Login/LoginPage.css */
 
-/* 배경 전체를 감싸는 영역 */
+/* 1. 배경 전체를 감싸는 영역 */
 .login-page-background {
   width: 100%;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f8f9fa;
+  background-color: #f8f9fa; /* 부드러운 연회색 배경 */
 }
 
-/* 회원가입의 .register-container와 동일한 스타일 */
+/* 2. 로그인 카드 컨테이너 */
 .login-container {
   width: 100%;
-  max-width: 440px; /* 이 수치가 좌우 퍼짐을 막아줍니다 */
+  max-width: 440px;
   margin: 2rem auto;
   padding: 3rem 2.5rem;
   background: #ffffff;
-  border-radius: 20px;
+  border-radius: 24px; /* 홈 화면 카드와 유사한 곡률 */
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
+  animation: fadeIn 0.5s ease-out; /* 등장 애니메이션 */
 }
 
-.login-title {
-  font-size: 1.8rem;
-  font-weight: 800;
+/* 3. 클릭 가능한 로고 타이틀 */
+.login-logo-title {
+  font-size: 2.2rem;
+  font-weight: 900;
   text-align: center;
   color: #1a1a1a;
   margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  letter-spacing: -1px;
 }
 
+.login-logo-title:hover {
+  color: #007bff; /* 브랜드 메인 컬러 */
+  transform: translateY(-2px); /* 살짝 위로 뜨는 느낌 */
+}
+
+/* 4. 보조 문구 */
 .login-subtitle {
   text-align: center;
   color: #888;
   font-size: 0.95rem;
   margin-bottom: 2.5rem;
+  word-break: keep-all; /* 한글 줄바꿈 최적화 */
 }
 
+/* 5. 하단 회원가입 유도 영역 */
 .login-footer {
-  margin-top: 1.5rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f1f3f5; /* 구분선 추가 */
   text-align: center;
   font-size: 0.9rem;
   color: #666;
@@ -48,16 +64,45 @@
   color: #007bff;
   text-decoration: none;
   font-weight: 700;
-  margin-left: 0.5rem;
+  margin-left: 0.6rem;
+  transition: color 0.2s ease;
 }
 
-/* 모바일 대응도 회원가입과 동일하게 */
+.login-footer a:hover {
+  text-decoration: underline;
+  color: #0056b3;
+}
+
+/* 등장 애니메이션 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 6. 모바일 대응 (반응형) */
 @media (max-width: 480px) {
+  .login-page-background {
+    background-color: #ffffff; /* 모바일은 배경색 통일 */
+    align-items: flex-start; /* 상단부터 시작 */
+  }
+
   .login-container {
     margin: 0;
-    padding: 2rem 1.2rem;
+    padding: 3rem 1.5rem;
     border-radius: 0;
     box-shadow: none;
+    max-width: 100%;
     min-height: 100vh;
+  }
+
+  .login-logo-title {
+    font-size: 1.8rem;
+    margin-top: 1rem;
   }
 }

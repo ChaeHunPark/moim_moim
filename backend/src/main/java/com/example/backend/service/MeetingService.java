@@ -1,6 +1,7 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.MeetingDetailResponse;
+import com.example.backend.dto.MeetingListResponse;
 import com.example.backend.dto.MeetingPostCreateRequest;
 import com.example.backend.dto.ParticipationRequestDto;
 import com.example.backend.entity.Category;
@@ -15,8 +16,12 @@ import com.example.backend.repository.MemberRepository;
 import com.example.backend.repository.ParticipationRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -74,6 +79,34 @@ public class MeetingService {
                 .endDate(post.getEndDate())               // 종료일(마감일)
                 .createdAt(post.getCreatedAt())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MeetingListResponse> getAllMeetings(String sortBy, Long categoryId) {
+        List<MeetingPost> posts;
+
+        // 1. 'urgent' (잔여석 순)은 별도 리포지토리 메서드 호출
+        if ("urgent".equalsIgnoreCase(sortBy)) {
+            posts = meetingPostRepository.findAllOrderByUrgent(categoryId);
+        }
+        // 2. 그 외 일반 정렬 (latest, closing, popular)
+        else {
+            Sort sort = switch (sortBy.toLowerCase()) {
+                case "closing" -> Sort.by(Sort.Direction.ASC, "startDate");
+                case "popular" -> Sort.by(Sort.Direction.DESC, "viewCount");
+                default -> Sort.by(Sort.Direction.DESC, "createdAt");
+            };
+
+            if (categoryId != null) {
+                posts = meetingPostRepository.findByCategoryId(categoryId, sort);
+            } else {
+                posts = meetingPostRepository.findAll(sort);
+            }
+        }
+
+        return posts.stream()
+                .map(MeetingListResponse::from)
+                .collect(Collectors.toList());
     }
 
 

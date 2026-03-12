@@ -7,6 +7,7 @@ import MeetingCreate from "../pages/Meeting/MeetingCreate";
 import Preparing from "../pages/Home/preparing";
 import HomePage from "../pages/Home/HomePage";
 import MeetingDetail from "../pages/Meeting/MeetingDetail";
+import MeetingList from "../pages/Meeting/MeetingList";
 
 const router = createBrowserRouter([
   {
@@ -31,8 +32,11 @@ const router = createBrowserRouter([
       {
         path: "/testauth",
         element: <TestAuth />,
-
       },
+      {
+        path: "/meetings",
+        element: <MeetingList/>
+      }
     ]
   },
   {

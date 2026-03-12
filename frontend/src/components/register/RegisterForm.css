@@ -1,20 +1,50 @@
+/* RegisterForm.css */
+
+/* 배경 전체 (RegisterPage.css에 넣어도 됨) */
+.register-page-background {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+}
+
 /* 기본 컨테이너 */
 .register-container {
   width: 100%;
-  max-width: 440px;
+  max-width: 460px; /* 입력 필드가 많으므로 로그인보다 살짝 넓게 설정 가능 */
   margin: 2rem auto;
   padding: 3rem 2.5rem;
   background: #ffffff;
-  border-radius: 20px;
+  border-radius: 24px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* 🎯 로고 타이틀 (로그인과 동일하게) */
+.register-logo-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  text-align: center;
+  color: #1a1a1a;
+  margin-bottom: 0.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: -1px;
+}
+
+.register-logo-title:hover {
+  color: #007bff;
+  transform: translateY(-2px);
 }
 
 .register-title {
-  font-size: 1.8rem;
-  font-weight: 800;
+  font-size: 1.5rem;
+  font-weight: 700;
   text-align: center;
-  color: #1a1a1a;
+  color: #333;
   margin-bottom: 0.5rem;
 }
 
@@ -25,6 +55,7 @@
   margin-bottom: 2.5rem;
 }
 
+/* 폼 스타일 */
 .register-form {
   display: flex;
   flex-direction: column;
@@ -49,6 +80,7 @@
   font-size: 0.85rem;
   font-weight: 700;
   color: #333;
+  margin-left: 4px;
 }
 
 .form-group input, 
@@ -58,11 +90,10 @@
   padding: 14px;
   border: 1.5px solid #eee;
   border-radius: 12px;
-  font-size: 16px; /* iOS 줌 방지 */
+  font-size: 16px;
   background-color: #fafafa;
   transition: all 0.2s;
   box-sizing: border-box;
-  font-family: inherit;
 }
 
 .form-group input:focus,
@@ -71,6 +102,7 @@
   outline: none;
   border-color: #007bff;
   background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
 }
 
 /* 에러 스타일 */
@@ -83,6 +115,7 @@
   color: #ff4d4f;
   font-size: 0.75rem;
   font-weight: 500;
+  margin-top: 2px;
 }
 
 .submit-button {
@@ -95,25 +128,48 @@
   font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .submit-button:hover {
   background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+/* 하단 푸터 */
+.register-footer {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+  border-top: 1px solid #f1f3f5;
+  padding-top: 1.5rem;
+}
+
+.link-text {
+  color: #007bff;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.link-text:hover {
+  text-decoration: underline;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* 모바일 대응 */
 @media (max-width: 480px) {
+  .register-page-background { background-color: #fff; }
   .register-container {
     margin: 0;
-    padding: 2rem 1.2rem;
+    padding: 2rem 1.5rem;
     border-radius: 0;
     box-shadow: none;
     min-height: 100vh;
-  }
-  
-  .form-row {
-    flex-direction: column;
-    gap: 1.2rem;
   }
 }

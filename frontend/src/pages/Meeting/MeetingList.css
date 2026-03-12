@@ -1,0 +1,225 @@
+/* 1. 전체 레이아웃 (App.css의 변수 활용) */
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--bg-color); /* #f8f9fa */
+}
+
+.meeting-list-container {
+    flex: 1;
+    max-width: 1200px; /* 홈 화면과 동일하게 맞춤 */
+    margin: 0 auto;
+    padding: 40px 20px;
+    width: 100%;
+}
+
+/* 2. 히어로 섹션 (HomePage.css의 .hero-section 스타일 복제) */
+.list-hero-section {
+    text-align: center; /* 홈처럼 중앙 정렬 */
+    padding: 60px 0; /* 목록 페이지 특성상 홈보다는 약간 컴팩트하게 */
+    background: linear-gradient(135deg, #e7f5ff 0%, #ffffff 100%); /* 🎯 핵심: 홈 화면과 동일한 그라데이션 */
+    border-radius: 32px; /* 홈과 동일한 곡률 */
+    margin-bottom: 50px;
+    display: flex;
+    flex-direction: column; /* 세로 배치 */
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    border: 1px solid #e1e4e8; /* 홈 화면 카드 테두리와 맞춤 */
+    animation: fadeIn 0.8s ease-out; /* 홈 화면 애니메이션 유지 */
+}
+
+.hero-content h1 {
+    font-size: 2rem; /* 홈 스타일 반영 */
+    color: var(--text-color);
+    margin-bottom: 12px;
+    font-weight: 800;
+}
+
+.hero-content p {
+    color: #868e96;
+    font-size: 1.1rem;
+}
+
+/* 3. 새 모임 만들기 버튼 (App.css 변수 활용) */
+.create-btn {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.create-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 123, 255, 0.2);
+}
+
+/* 4. 필터 섹션 (홈 화면에는 없지만 스타일 톤을 맞춤) */
+.filter-section {
+    margin-bottom: 40px;
+}
+
+.category-nav {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 25px;
+    overflow-x: auto; /* 카테고리가 많아지면 가로 스크롤 허용 */
+    padding: 5px 0;
+    -ms-overflow-style: none; /* IE 스크롤바 숨기기 */
+    scrollbar-width: none; /* 파이어폭스 스크롤바 숨기기 */
+}
+
+.category-nav::-webkit-scrollbar {
+    display: none; /* 크롬, 사파리 스크롤바 숨기기 */
+}
+
+.category-nav button {
+    border: 1px solid #e1e4e8;
+    background: white;
+    padding: 10px 22px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #495057;
+    transition: all 0.2s;
+    white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+}
+
+.category-nav button.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    font-weight: 700;
+}
+
+.sort-tabs {
+    display: flex;
+    gap: 30px;
+    justify-content: flex-end; /* 정렬은 우측 정렬 */
+    border-bottom: 1px solid #e1e4e8;
+    padding-bottom: 15px;
+}
+
+.sort-tabs span {
+    font-size: 0.9rem;
+    color: #adb5bd;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.sort-tabs span.active {
+    color: var(--text-color);
+    font-weight: 700;
+    position: relative;
+}
+
+.sort-tabs span.active::after {
+    content: '';
+    position: absolute;
+    bottom: -16px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--primary-color);
+}
+
+/* 5. 모임 그리드 및 카드 (HomePage.css 복제) */
+.meeting-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+}
+
+.meeting-card {
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid #e1e4e8;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+.meeting-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    padding: 20px 20px 0 20px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.card-category {
+    font-size: 0.8rem;
+    color: #1c7ed6; /* 홈 화면 .card-category 색상 */
+    font-weight: 700;
+}
+
+.urgent-badge {
+    background-color: #fff0f0;
+    color: #ff4d4f;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+.meeting-card h3 {
+    padding: 15px 20px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #212529;
+    line-height: 1.4;
+    min-height: 64px;
+}
+
+.card-body {
+    padding: 0 20px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #868e96;
+}
+
+.card-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #f1f3f5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+}
+
+.view-count {
+    font-size: 0.85rem;
+    color: #adb5bd;
+}
+
+.detail-btn {
+    background: #f8f9fa;
+    border: 1px solid #e1e4e8;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #495057;
+    cursor: pointer;
+}
+
+/* 공통 애니메이션 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

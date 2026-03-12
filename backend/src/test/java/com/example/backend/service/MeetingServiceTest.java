@@ -1,6 +1,7 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.MeetingDetailResponse;
+import com.example.backend.dto.MeetingListResponse;
 import com.example.backend.dto.MeetingPostCreateRequest;
 import com.example.backend.entity.*;
 import com.example.backend.repository.CategoryRepository;
@@ -8,15 +9,20 @@ import com.example.backend.repository.MeetingPostRepository;
 import com.example.backend.repository.MemberRepository;
 import com.example.backend.repository.ParticipationRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.test.util.ReflectionTestUtils;
 
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,6 +42,17 @@ class MeetingServiceTest {
 
     @InjectMocks
     private MeetingService meetingService;
+
+    private Member testMember;
+    private Category studyCategory;
+
+    @BeforeEach
+    void setUp() {
+        testMember = Member.builder().email("test@test.com").build();
+        studyCategory = Category.builder().name("스터디").build();
+        // ID가 필요한 경우 Reflection으로 주입 (카테고리 ID 필터링 테스트용)
+        ReflectionTestUtils.setField(studyCategory, "id", 1L);
+    }
 
     // --- 1. 모임 생성 테스트 ---
 
@@ -117,5 +134,97 @@ class MeetingServiceTest {
         assertThatThrownBy(() -> meetingService.getMeetingDetail(invalidId))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessageContaining("해당 모임을 찾을 수 없습니다");
+    }
+
+    @Test
+    @DisplayName("최신순(latest) 조회 시 생성일 내림차순 정렬이 적용되어야 한다")
+    void getAllMeetings_Latest() {
+        // given
+        MeetingPost post = createPost("최신글");
+        ReflectionTestUtils.setField(post, "id", 1L);
+        given(meetingPostRepository.findAll(any(Sort.class))).willReturn(List.of(post));
+
+        // when
+        List<MeetingListResponse> result = meetingService.getAllMeetings("latest", null);
+
+        // then
+        ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
+        verify(meetingPostRepository).findAll(sortCaptor.capture());
+
+        assertThat(sortCaptor.getValue().getOrderFor("createdAt").getDirection())
+                .isEqualTo(Sort.Direction.DESC);
+        assertThat(result.get(0).getId()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("인기순(popular) 조회 시 조회수 내림차순 정렬이 적용되어야 한다")
+    void getAllMeetings_Popular() {
+        // given
+        given(meetingPostRepository.findAll(any(Sort.class))).willReturn(List.of());
+
+        // when
+        meetingService.getAllMeetings("popular", null);
+
+        // then
+        ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
+        verify(meetingPostRepository).findAll(sortCaptor.capture());
+
+        assertThat(sortCaptor.getValue().getOrderFor("viewCount").getDirection())
+                .isEqualTo(Sort.Direction.DESC);
+    }
+
+    @Test
+    @DisplayName("마감 임박순(closing) 조회 시 시작일 오름차순 정렬이 적용되어야 한다")
+    void getAllMeetings_Closing() {
+        // given
+        given(meetingPostRepository.findAll(any(Sort.class))).willReturn(List.of());
+
+        // when
+        meetingService.getAllMeetings("closing", null);
+
+        // then
+        ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
+        verify(meetingPostRepository).findAll(sortCaptor.capture());
+
+        assertThat(sortCaptor.getValue().getOrderFor("startDate").getDirection())
+                .isEqualTo(Sort.Direction.ASC);
+    }
+
+    @Test
+    @DisplayName("잔여석 순(urgent) 조회 시 커스텀 리포지토리 메서드가 호출되어야 한다")
+    void getAllMeetings_Urgent() {
+        // given
+        given(meetingPostRepository.findAllOrderByUrgent(any())).willReturn(List.of());
+
+        // when
+        meetingService.getAllMeetings("urgent", 1L);
+
+        // then
+        // urgent는 일반 findAll(Sort)이 아닌 특수 쿼리 메서드 호출 확인
+        verify(meetingPostRepository).findAllOrderByUrgent(1L);
+    }
+
+    @Test
+    @DisplayName("카테고리 ID가 있으면 카테고리 필터링 메서드가 호출되어야 한다")
+    void getAllMeetings_WithCategory() {
+        // given
+        given(meetingPostRepository.findByCategoryId(anyLong(), any(Sort.class))).willReturn(List.of());
+
+        // when
+        meetingService.getAllMeetings("latest", 1L);
+
+        // then
+        verify(meetingPostRepository).findByCategoryId(eq(1L), any(Sort.class));
+    }
+
+    // 테스트용 헬퍼 메서드
+    private MeetingPost createPost(String title) {
+        return MeetingPost.builder()
+                .title(title)
+                .description("내용")
+                .capacity(5)
+                .creator(testMember)
+                .category(studyCategory)
+                .build();
     }
 }

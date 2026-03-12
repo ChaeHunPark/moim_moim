@@ -50,7 +50,6 @@ api.interceptors.response.use(
             originalRequest._retry = true; // 재시도 플래그 설정
 
             try {
-                console.log("🔄 토큰 만료 감지: 재발급 시도 중...");
 
                 // 💡 axios 대신 설정이 완료된 api 인스턴스를 사용 (경로 중복 주의)
                 const res = await api.post('/auth/reissue', {});
