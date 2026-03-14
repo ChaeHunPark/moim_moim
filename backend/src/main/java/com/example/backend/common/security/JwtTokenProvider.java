@@ -1,5 +1,6 @@
 package com.example.backend.common.security;
 
+import com.example.backend.common.exception.CustomJwtException;
 import com.example.backend.dto.TokenResponseDto;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -123,12 +124,17 @@ public class JwtTokenProvider {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
+        } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
+            // [변조] 사용자에게 "서명 오류"라고 하기보다 다시 로그인을 권유합니다.
+            throw new CustomJwtException("INVALID_TOKEN", "인증 정보가 유효하지 않습니다. 다시 로그인해 주세요.");
         } catch (ExpiredJwtException e) {
-            log.error("만료된 토큰입니다.");
-        } catch (Exception e) {
-            log.error("유효하지 않은 토큰입니다: {}", e.getMessage());
+            // [만료] 사용자에게 잘못이 없음을 알리고 잠시 기다려달라고 안내합니다.
+            throw new CustomJwtException("EXPIRED_TOKEN", "로그인 세션이 만료되었습니다. 곧 갱신을 시도합니다.");
+        } catch (UnsupportedJwtException e) {
+            throw new CustomJwtException("INVALID_TOKEN", "지원되지 않는 인증 형식입니다. 다시 로그인해 주세요.");
+        } catch (IllegalArgumentException e) {
+            throw new CustomJwtException("INVALID_TOKEN", "잘못된 인증 정보입니다. 다시 로그인해 주세요.");
         }
-        return false;
     }
 
     /**
@@ -169,5 +175,24 @@ public class JwtTokenProvider {
         Claims claims = parseClaims(token);
         Object id = claims.get("id");
         return id != null ? Long.valueOf(id.toString()) : null;
+    }
+
+    /*
+    * 테스트용 메서드
+    * */
+    public String createTestToken(Long id, String email, String role, long validityMs) {
+        Claims claims = Jwts.claims().setSubject(email);
+        if (id != null) claims.put("id", id);
+        if (role != null) claims.put("role", role);
+
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + validityMs);
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(validity) // 💡 여기서 만료 시간을 결정
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
     }
 }

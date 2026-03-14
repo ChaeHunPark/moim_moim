@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from '../../api/axios';
+// 💡 경로 확인: 프로젝트 구조에 맞춰 '../api/axios' 또는 '../../api/axios'로 설정
+import api from '../../api/axios'; 
 import ParticipationForm from '../../components/meeting/ParticipationForm';
 import './MeetingDetail.css';
 
@@ -9,7 +10,7 @@ const formatDateTime = (dateString) => {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-        weekday: 'short', // '월', '화' 등 요일 표시
+        weekday: 'short',
         hour: '2-digit',
         minute: '2-digit'
     };
@@ -25,18 +26,33 @@ const MeetingDetail = () => {
     const formRef = useRef(null);
 
     useEffect(() => {
-        axios.get(`/meetings/${id}`)
-            .then(res => {
+        const fetchMeetingDetail = async () => {
+            try {
+                // 💡 api 인스턴스 사용
+                const res = await api.get(`/meetings/${id}`);
                 setMeeting(res.data);
-                setLoading(false);
-            })
-            .catch(err => {
-                // 3. 에러(404 등) 발생 시 아무 창 안 띄우고 바로 홈으로 이동
+            } catch (err) {
+                console.error("상세 데이터 로딩 실패:", err);
+                // 💡 404나 서버 에러 시 홈으로 리다이렉트
+                // 인터셉터에서 401을 처리하겠지만, 페이지 자체가 없는 경우 등에 대비합니다.
                 navigate('/', { replace: true });
-            });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchMeetingDetail();
     }, [id, navigate]);
 
     const handleApplyClick = () => {
+        // 💡 참여 신청 전 로그인이 되어있는지 확인하는 로직을 추가하면 더 좋습니다.
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            alert("참여 신청을 하려면 로그인이 필요합니다.");
+            navigate('/login');
+            return;
+        }
+
         setShowForm(true);
         setTimeout(() => {
             formRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -49,7 +65,7 @@ const MeetingDetail = () => {
     const isFull = meeting.currentParticipants >= meeting.capacity;
 
     return (
-        <div className="meeting-page-bg"> {/* 배경색을 위한 래퍼 */}
+        <div className="meeting-page-bg">
             <div className="meeting-container">
                 {/* 헤더 섹션 */}
                 <div className="meeting-header">
@@ -92,7 +108,7 @@ const MeetingDetail = () => {
                     </div>
                 </div>
 
-                {/* 상세 설명 섹션 (하얀 배경 안에 구분선으로 분리) */}
+                {/* 상세 설명 섹션 */}
                 <div className="meeting-content-section">
                     <h3 className="content-label">모임 상세 설명</h3>
                     <div className="meeting-content">
@@ -118,6 +134,7 @@ const MeetingDetail = () => {
                 {/* 참여 신청 폼 */}
                 {showForm && (
                     <div ref={formRef} className="form-section-wrapper">
+                        {/* 💡 참여 신청 폼 내부의 API 호출도 api 인스턴스를 쓰고 있는지 확인하세요! */}
                         <ParticipationForm meetingPostId={id} />
                         <button className="btn-cancel-action" onClick={() => setShowForm(false)}>
                             신청 취소하기

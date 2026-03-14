@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios'; // axios 설치 필요: npm install axios
+// 💡 중요: 커스텀 api 인스턴스 가져오기
+import api from '../../api/axios';
 import './MeetingCreate.css';
 
 const MeetingCreate = () => {
@@ -56,59 +57,42 @@ const MeetingCreate = () => {
         setIsLoading(true);
 
         try {
-            // 1. 토큰 가져오기 (로그인 시 저장한 키값 확인 필요)
-            const token = localStorage.getItem('accessToken'); 
-            
-            if (!token) {
-                alert("로그인이 필요합니다.");
-                navigate('/login');
-                return;
-            }
-
-            // 2. 백엔드 DTO 규격에 맞게 데이터 가공
+            // 💡 데이터 가공 (백엔드 DTO 규격)
             const requestBody = {
                 title: formData.title,
-                categoryId: Number(formData.categoryId), // Long 타입 대응
-                capacity: Number(formData.capacity),     // int 타입 대응
-                startDate: formData.startDate,           // ISO 8601 포맷
+                categoryId: Number(formData.categoryId),
+                capacity: Number(formData.capacity),
+                startDate: formData.startDate,
                 endDate: formData.endDate,
                 description: formData.description,
-                // 태그는 현재 백엔드 DTO에 없으므로 우선 제외하거나 필요시 추가
             };
 
-            // 3. 실제 API 호출
-            const response = await axios.post('/api/meetings', requestBody, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            // 💡 1. axios.post -> api.post 로 변경
+            // 💡 2. headers 설정을 일일이 넣을 필요가 없습니다. (api 인스턴스가 자동 처리)
+            const response = await api.post('/meetings', requestBody);
 
             if (response.status === 201 || response.status === 200) {
                 alert("🎉 모임이 성공적으로 개설되었습니다!");
+                // 백엔드에서 생성된 ID를 반환한다고 가정
                 const newId = response.data.id;
-
-                navigate(`/meetings/${newId}`); // 상세 페이지로 이동 (ID 반환 가정)
+                navigate(`/meetings/${newId}`);
             }
         } catch (error) {
-            // 4. 에러 상황 처리 (Edge Cases)
             console.error("Error creating meeting:", error);
-            const status = error.response?.status;
             
-            if (status === 401) {
-                alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-                navigate('/login');
-            } else if (status === 400) {
+            // 💡 401(인증에러) 등 공통 에러는 이미 axios.js 인터셉터에서 
+            // 처리하고 있으므로, 여기선 '글쓰기 실패'에 대한 특수 처리만 남깁니다.
+            const status = error.response?.status;
+            if (status === 400) {
                 alert(`입력 값을 확인해주세요: ${error.response?.data?.message || "잘못된 요청입니다."}`);
-            } else {
-                alert("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            } else if (status !== 401) {
+                // 401은 인터셉터에서 처리하므로 그 외의 에러만 알림
+                alert("모임 등록 중 오류가 발생했습니다.");
             }
         } finally {
             setIsLoading(false);
         }
     };
-
-    // ... (return 부분은 이전과 동일하므로 생
 
     return (
         <div className="create-page-wrapper">
@@ -134,7 +118,7 @@ const MeetingCreate = () => {
                         <div className="form-row">
                             <div className="form-group">
                                 <label className="form-label">카테고리</label>
-                                <select name="categoryId" className="form-select" onChange={handleChange} required>
+                                <select name="categoryId" className="form-select" value={formData.categoryId} onChange={handleChange} required>
                                     <option value="">어떤 종류의 모임인가요?</option>
                                     {CATEGORIES.map(cat => (
                                         <option key={cat.id} value={cat.id}>
@@ -163,6 +147,7 @@ const MeetingCreate = () => {
                                     type="datetime-local"
                                     name="startDate"
                                     className="form-input"
+                                    value={formData.startDate}
                                     onChange={handleChange}
                                     required
                                 />
@@ -173,6 +158,7 @@ const MeetingCreate = () => {
                                     type="datetime-local"
                                     name="endDate"
                                     className="form-input"
+                                    value={formData.endDate}
                                     onChange={handleChange}
                                     required
                                 />

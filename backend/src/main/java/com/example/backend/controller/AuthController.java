@@ -97,4 +97,14 @@ public class AuthController {
         return ResponseEntity.ok("로그아웃 되었습니다.");
     }
 
+    /**
+     * [버그 수정] 토큰 유효성 검증 전용 엔드포인트
+     * 프론트엔드 App.js 초기 구동 시 호출하여 변조된 토큰을 걸러냄
+     */
+    @GetMapping("/verify")
+    public ResponseEntity<Void> verifyToken() {
+        // Filter를 통과해 이 컨트롤러에 도달했다는 것은 유효한 토큰임을 보장함
+        return ResponseEntity.ok().build();
+    }
+
 }

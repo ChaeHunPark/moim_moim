@@ -13,16 +13,27 @@ const Header = () => {
   }, []);
 
   // 2. 로그아웃 핸들러
-  const handleLogout = () => {
-    // 엣지 케이스: 로그아웃 확인 컨펌
-    if (window.confirm("로그아웃 하시겠습니까?")) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      setIsLoggedIn(false);
-      alert("로그아웃 되었습니다. 👋");
-      navigate('/');
-    }
-  };
+  const handleLogout = async () => {
+      if (!window.confirm("로그아웃 하시겠습니까?")) return;
+
+      try {
+        // 공통 api 인스턴스를 사용하여 /logout 호출
+        // 인터셉터에서 토큰을 자동으로 넣어준다면 두 번째 인자는 비워둬도 됩니다.
+        await api.post('/logout'); 
+        
+      } catch (error) {
+        // 서버에서 이미 토큰이 만료되었거나 에러가 나도 클라이언트 정리는 강행
+        console.error("로그아웃 API 호출 실패:", error);
+      } finally {
+        // 저장소 정리 및 상태 업데이트
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        setIsLoggedIn(false);
+        
+        alert("로그아웃 되었습니다. 👋");
+        navigate('/');
+      }
+    };
 
   return (
     <header className="main-header">

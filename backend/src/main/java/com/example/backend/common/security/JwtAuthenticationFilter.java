@@ -1,7 +1,14 @@
 package com.example.backend.common.security;
 
+import com.example.backend.common.exception.CustomJwtException;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,24 +41,64 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        // 1. Request Header에서 토큰 추출
         String token = resolveToken(request);
 
-        if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-            // [체크] Redis 블랙리스트 확인
-            String isLogout = redisTemplate.opsForValue().get("BL:" + token);
+        // 2. 토큰이 존재할 때만 검증 로직 실행
+        if (StringUtils.hasText(token)) {
+            try {
+                // jwtTokenProvider.validateToken 내에서 만료/변조 시 CustomJwtException 발생
+                if (jwtTokenProvider.validateToken(token)) {
 
-            if (ObjectUtils.isEmpty(isLogout)) {
-                // [수정] getAuthentication 메서드가 내부적으로 ID(Long)를 Principal에 담도록 구현되어야 함
-                Authentication auth = jwtTokenProvider.getAuthentication(token);
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                    // 3. Redis 블랙리스트(로그아웃 여부) 확인
+                    String isLogout = redisTemplate.opsForValue().get("BL:" + token);
 
-                log.debug("인증 완료 - Principal: {}", auth.getPrincipal());
-            } else {
-                log.warn("로그아웃된 토큰으로 접근 시도: {}", token);
+                    if (ObjectUtils.isEmpty(isLogout)) {
+                        // 4. 정상 토큰일 경우 인증 객체 설정
+                        Authentication auth = jwtTokenProvider.getAuthentication(token);
+                        SecurityContextHolder.getContext().setAuthentication(auth);
+                        log.debug("인증 완료 - Principal: {}", auth.getPrincipal());
+                    } else {
+                        // 로그아웃된 토큰인 경우
+                        log.warn("로그아웃된 토큰으로 접근 시도: {}", token);
+                        sendErrorResponse(response, "LOGOUT_TOKEN", "이미 로그아웃된 토큰입니다.");
+                        return;
+                    }
+                }
+            } catch (CustomJwtException e) {
+                // 💡 [핵심] 커스텀 예외를 잡아 프론트엔드와 약속한 에러 코드를 응답
+                log.warn("JWT 인증 실패 - 코드: {}, 사유: {}", e.getErrorCode(), e.getMessage());
+                sendErrorResponse(response, e.getErrorCode(), e.getMessage());
+                return; // 필터 중단
+            } catch (Exception e) {
+                // 그 외 알 수 없는 인증 에러
+                log.error("인증 처리 중 서버 에러 발생", e);
+                sendErrorResponse(response, "AUTH_ERROR", "인증 처리 중 오류가 발생했습니다.");
+                return;
             }
         }
 
+        // 5. 토큰이 없거나 인증이 완료된 경우 다음 필터로 진행
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * 에러 응답을 보내는 메서드 (JSONException 해결 버전)
+     */
+    private void sendErrorResponse(HttpServletResponse response, String code, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+
+        try {
+            JSONObject responseJson = new JSONObject();
+            responseJson.put("status", 401);
+            responseJson.put("code", code); // EXPIRED_TOKEN 또는 INVALID_TOKEN
+            responseJson.put("message", message);
+
+            response.getWriter().print(responseJson.toString());
+        } catch (Exception e) {
+            log.error("JSON 응답 생성 중 에러 발생", e);
+        }
     }
 
     private String resolveToken(HttpServletRequest request) {

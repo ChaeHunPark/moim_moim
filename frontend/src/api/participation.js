@@ -1,4 +1,4 @@
-import api from './axios'; // axios.js에서 export default 된 api 인스턴스
+import api from "./axios";
 
 /**
  * 모임 참여 신청 API

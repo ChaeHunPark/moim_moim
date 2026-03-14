@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+// 💡 중요: 원본 axios 대신 우리가 만든 설정 파일을 가져옵니다.
+import api from '../../api/axios';
 import Swal from 'sweetalert2';
 import './MeetingList.css';
 
@@ -10,7 +11,7 @@ const MeetingList = () => {
     // 상태 관리
     const [meetings, setMeetings] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [status, setStatus] = useState('loading'); // 'loading' | 'success' | 'error' | 'empty'
+    const [status, setStatus] = useState('loading'); 
     
     // 필터 및 정렬 상태
     const [sortBy, setSortBy] = useState('latest');
@@ -27,7 +28,8 @@ const MeetingList = () => {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await axios.get('/api/categories');
+                // api 인스턴스 사용 (baseURL이 /api라면 '/categories'만 작성)
+                const response = await api.get('/categories');
                 if (response.status === 200) {
                     setCategories(response.data);
                 }
@@ -43,7 +45,8 @@ const MeetingList = () => {
         const fetchMeetings = async () => {
             setStatus('loading');
             try {
-                const response = await axios.get('/api/meetings', {
+                // api 인스턴스 사용
+                const response = await api.get('/meetings', {
                     params: { categoryId, sortBy }
                 });
                 
@@ -54,6 +57,7 @@ const MeetingList = () => {
                 }
             } catch (error) {
                 console.error("모임 데이터 로딩 실패:", error);
+                // 인터셉터에서 401/403을 처리하겠지만, 여기서도 에러 상태를 표시해줍니다.
                 setStatus('error');
             }
         };
@@ -62,7 +66,8 @@ const MeetingList = () => {
 
     // 새 모임 만들기 클릭 핸들러 (인증 체크)
     const handleCreateClick = () => {
-        const token = localStorage.getItem('token'); 
+        // 키 이름을 'accessToken'으로 통일
+        const token = localStorage.getItem('accessToken'); 
 
         if (!token) {
             Swal.fire({
@@ -83,14 +88,14 @@ const MeetingList = () => {
                 }
             });
         } else {
-            navigate('/meetings/create');
+            // 토큰이 있다면 작성 페이지로 이동
+            navigate('/meeting-create');
         }
     };
 
     return (
         <div className="page-wrapper">
             <div className="meeting-list-container">
-                {/* 헤더 섹션 */}
                 <header className="list-hero-section">
                     <div className="hero-content">
                         <h1>👋 함께 성장할 동료를 찾아보세요</h1>
@@ -101,7 +106,6 @@ const MeetingList = () => {
                     </button>
                 </header>
 
-                {/* 필터 영역 */}
                 <div className="filter-section">
                     <nav className="category-nav">
                         <button 
@@ -134,11 +138,8 @@ const MeetingList = () => {
                     </div>
                 </div>
 
-                {/* 리스트 렌더링 영역 */}
                 {status === 'loading' && <div className="status-message">모임을 불러오는 중...</div>}
-                
                 {status === 'error' && <div className="status-message">데이터 로드 중 에러가 발생했습니다.</div>}
-                
                 {status === 'empty' && <div className="status-message">해당 카테고리에 등록된 모임이 없습니다.</div>}
 
                 {status === 'success' && (
