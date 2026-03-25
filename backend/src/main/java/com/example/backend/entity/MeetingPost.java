@@ -1,9 +1,13 @@
 package com.example.backend.entity;
 
+import com.example.backend.common.exception.CustomException;
+import com.example.backend.common.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -42,6 +46,9 @@ public class MeetingPost extends BaseTimeEntity {
     @JoinColumn(name = "category_id")
     private Category category;
 
+    @OneToMany(mappedBy = "meetingPost", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Participation> participations = new ArrayList<>();
+
     @Builder // 생성자의 파라미터명이 빌더 메서드명이 됩니다.
     public MeetingPost(String title, String description, int capacity,
                        LocalDateTime startDate, LocalDateTime endDate,
@@ -53,6 +60,28 @@ public class MeetingPost extends BaseTimeEntity {
         this.endDate = endDate;
         this.creator = creator;
         this.category = category;
+    }
+
+
+    /**
+     * 모임 정보 수정 (비즈니스 로직)
+     * Dirty Checking에 의해 트랜잭션 종료 시 자동으로 DB에 반영됩니다.
+     */
+    public void update(String title, String description, int capacity, Category category,
+                       LocalDateTime startDate, LocalDateTime endDate) {
+
+        // [비즈니스 검증] 예: 현재 참여 인원보다 정원을 적게 수정할 수 없음
+        if (capacity < this.currentParticipants) {
+            throw new CustomException(ErrorCode.INVALID_CAPACITY);
+            // ErrorCode에 "현재 참여 인원보다 적은 정원으로 수정할 수 없습니다" 추가 권장
+        }
+
+        this.title = title;
+        this.description = description;
+        this.capacity = capacity;
+        this.category = category;
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
 
     public void incrementViewCount() {

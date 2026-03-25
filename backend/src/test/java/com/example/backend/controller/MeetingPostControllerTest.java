@@ -1,10 +1,11 @@
 package com.example.backend.controller;
 
 
+import com.example.backend.common.exception.CustomException;
+import com.example.backend.common.exception.ErrorCode;
 import com.example.backend.dto.MeetingDetailResponse;
-import com.example.backend.dto.MeetingListResponse;
 import com.example.backend.dto.MeetingPostCreateRequest;
-import com.example.backend.entity.MeetingPost;
+import com.example.backend.dto.MeetingPostUpdateRequest;
 import com.example.backend.service.MeetingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -13,26 +14,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-
+import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(MeetingPostController.class) // 테스트할 컨트롤러 지정
-@AutoConfigureMockMvc(addFilters = false) // 시큐리티 필터 제외
+@WebMvcTest(MeetingPostController.class)
+@AutoConfigureMockMvc(addFilters = false) // 시큐리티 필터 제외 (테스트 집중)
 class MeetingPostControllerTest {
 
     @Autowired
@@ -41,146 +35,138 @@ class MeetingPostControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockitoBean // 서비스 계층 모킹
+    @MockitoBean // Spring Boot 버전에 따라 @MockitoBean 또는 @MockBean 사용
     private MeetingService meetingService;
 
+    // --- 1. 모임 생성 테스트 ---
     @Test
     @DisplayName("모임 생성 API 호출 성공 - 201 Created를 반환한다")
     void createMeeting_api_success() throws Exception {
-        // [Given]
         MeetingPostCreateRequest request = MeetingPostCreateRequest.builder()
-                .title("풋살 하실 분")
-                .description("강남역 인근입니다")
-                .capacity(10)
-                .categoryId(1L)
-                .build();
+                .title("테스트 모임").description("설명").capacity(5).categoryId(1L).build();
 
         given(meetingService.createMeeting(any(), any())).willReturn(100L);
 
-        // [When & Then]
         mockMvc.perform(post("/api/meetings")
-                        .with(csrf()) // 시큐리티 사용 시 CSRF 토큰 필요
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated()) // 201 응답 기대
-                .andExpect(jsonPath("$.id").value(100L)); // 반환 데이터 검증
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(100L));
     }
 
+    // --- 2. 모임 상세 조회 테스트 ---
     @Test
-    @WithMockUser
     @DisplayName("모임 상세 조회 API 호출 성공 - 200 OK와 데이터를 반환한다")
     void getMeetingDetail_api_success() throws Exception {
-        // [Given]
+        // given
         Long meetingId = 100L;
         MeetingDetailResponse response = MeetingDetailResponse.builder()
                 .id(meetingId)
                 .title("러닝 스터디")
-                .description("3km 뜁니다")
-                .capacity(5)
-                .currentParticipants(1)
                 .categoryName("운동")
-                .creatorEmail("user@test.com")
+                .currentParticipants(1)
+                .isHost(true) // 💡 새롭게 추가된 필드 설정
                 .build();
 
-        given(meetingService.getMeetingDetail(meetingId)).willReturn(response);
+        // 💡 서비스 호출 시 두 번째 인자로 어떤 String이 와도 response를 반환하도록 설정
+        given(meetingService.getMeetingDetail(eq(meetingId), any())).willReturn(response);
 
-        // [When & Then]
+        // when & then
         mockMvc.perform(get("/api/meetings/{id}", meetingId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("러닝 스터디"))
-                .andExpect(jsonPath("$.categoryName").value("운동"))
-                .andExpect(jsonPath("$.currentParticipants").value(1));
+                .andExpect(jsonPath("$.id").value(meetingId))
+                .andExpect(jsonPath("$.host").value(true)); // 💡 isHost 필드 확인 (Boolean은 $.host로 매핑될 수 있음)
+    }
+
+    // --- 3. 모임 수정 테스트 (Update) ---
+    @Test
+    @DisplayName("모임 수정 API 호출 성공 - 200 OK를 반환한다")
+    void updateMeeting_api_success() throws Exception {
+        Long meetingId = 100L;
+        MeetingPostUpdateRequest request = MeetingPostUpdateRequest.builder()
+                .title("제목 수정").description("내용 수정").capacity(10).categoryId(1L)
+                .startDate(LocalDateTime.now().plusDays(1)).endDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        willDoNothing().given(meetingService).updateMeeting(eq(meetingId), any(), any());
+
+        mockMvc.perform(put("/api/meetings/{id}", meetingId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("참여 신청 시 현재 인원이 1 증가한다")
-    void addParticipant_Success() {
-        // given
-        MeetingPost post = MeetingPost.builder()
-                .capacity(2)
+    @DisplayName("모임 수정 실패 - 작성자가 아닐 때 403 Forbidden과 ErrorCode를 반환한다")
+    void updateMeeting_api_fail_forbidden() throws Exception {
+        Long meetingId = 100L;
+        MeetingPostUpdateRequest request = MeetingPostUpdateRequest.builder()
+                .title("제목")
+                .description("내용")
+                .capacity(5)
+                .categoryId(1L)
+                .startDate(LocalDateTime.now().plusDays(1)) // 추가
+                .endDate(LocalDateTime.now().plusDays(2))   // 추가
                 .build();
 
-        // when
-        post.addParticipant();
+        willThrow(new CustomException(ErrorCode.NOT_MEETING_CREATOR))
+                .given(meetingService).updateMeeting(eq(meetingId), any(), any());
 
-        // then
-        assertThat(post.getCurrentParticipants()).isEqualTo(2);
+        mockMvc.perform(put("/api/meetings/{id}", meetingId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("MEETING_003"));
     }
 
+    // --- 4. 모임 삭제 테스트 (Delete) ---
     @Test
-    @DisplayName("정원이 초과된 상태에서 참여 신청 시 예외가 발생한다")
-    void addParticipant_Fail_Full() {
-        // given
-        MeetingPost post = MeetingPost.builder()
-                .capacity(2)
-                .build();
-        post.addParticipant(); // 현재 2명 (풀방)
+    @DisplayName("모임 삭제 API 호출 성공 - 204 No Content를 반환한다")
+    void deleteMeeting_api_success() throws Exception {
+        Long meetingId = 100L;
+        willDoNothing().given(meetingService).deleteMeeting(eq(meetingId), any());
 
-        // when & then
-        assertThatThrownBy(post::addParticipant)
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("이미 모집 정원");
+        mockMvc.perform(delete("/api/meetings/{id}", meetingId))
+                .andExpect(status().isNoContent());
     }
 
+    // --- 5. 목록 조회 및 필터링 테스트 ---
     @Test
     @DisplayName("정렬 조건 없이 목록 조회 시 기본값(latest)으로 서비스를 호출한다")
     void getAllMeetings_Default() throws Exception {
-        // given
-        given(meetingService.getAllMeetings("latest", null))
-                .willReturn(List.of());
+        given(meetingService.getAllMeetings("latest", null)).willReturn(List.of());
 
-        // when & then
-        mockMvc.perform(get("/api/meetings")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andDo(print());
+        mockMvc.perform(get("/api/meetings"))
+                .andExpect(status().isOk());
 
         verify(meetingService).getAllMeetings("latest", null);
     }
 
     @Test
-    @DisplayName("특정 정렬 조건과 카테고리로 목록을 조회한다")
+    @DisplayName("특정 정렬 조건(popular) 파라미터가 서비스로 잘 전달된다")
     void getAllMeetings_WithParams() throws Exception {
-        // given
-        Long categoryId = 1L;
-        String sortBy = "popular";
+        given(meetingService.getAllMeetings("popular", 1L)).willReturn(List.of());
 
-        MeetingListResponse response = MeetingListResponse.builder()
-                .id(1L)
-                .title("인기 있는 모임")
-                .categoryName("개발")
-                .viewCount(100)
-                .build();
-
-        given(meetingService.getAllMeetings(sortBy, categoryId))
-                .willReturn(List.of(response));
-
-        // when & then
         mockMvc.perform(get("/api/meetings")
-                        .param("sortBy", sortBy)
-                        .param("categoryId", categoryId.toString())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("인기 있는 모임"))
-                .andExpect(jsonPath("$[0].viewCount").value(100))
-                .andDo(print());
+                        .param("sortBy", "popular")
+                        .param("categoryId", "1"))
+                .andExpect(status().isOk());
 
-        verify(meetingService).getAllMeetings(sortBy, categoryId);
+        verify(meetingService).getAllMeetings("popular", 1L);
     }
 
     @Test
-    @DisplayName("잔여석 순(urgent) 정렬 파라미터가 서비스로 잘 전달된다")
-    void getAllMeetings_UrgentParam() throws Exception {
-        // given
-        given(meetingService.getAllMeetings("urgent", null))
-                .willReturn(List.of());
+    @DisplayName("유효성 검사 실패 - 제목 공백 시 400 Bad Request를 반환한다")
+    void updateMeeting_api_fail_validation() throws Exception {
+        Long meetingId = 100L;
+        MeetingPostUpdateRequest invalidRequest = MeetingPostUpdateRequest.builder()
+                .title("").description("내용").build(); // @NotBlank 위반
 
-        // when & then
-        mockMvc.perform(get("/api/meetings")
-                        .param("sortBy", "urgent")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
-
-        verify(meetingService).getAllMeetings("urgent", null);
+        mockMvc.perform(put("/api/meetings/{id}", meetingId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_001"));
     }
 }

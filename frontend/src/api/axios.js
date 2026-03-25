@@ -22,9 +22,8 @@ api.interceptors.request.use(
     (config) => {
         const skipUrls = ['/auth/login', '/auth/signup', '/auth/reissue'];
         const isSkipped = skipUrls.some(url => config.url && config.url.includes(url));
-        const isMeetingsGet = config.url && config.url.includes('/meetings') && config.method === 'get';
         
-        if (!isSkipped && !isMeetingsGet) {
+        if (!isSkipped) {
             const token = localStorage.getItem('accessToken');
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;

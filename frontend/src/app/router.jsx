@@ -8,6 +8,7 @@ import Preparing from "../pages/Home/preparing";
 import HomePage from "../pages/Home/HomePage";
 import MeetingDetail from "../pages/Meeting/MeetingDetail";
 import MeetingList from "../pages/Meeting/MeetingList";
+import MeetingEdit from "../pages/Meeting/MeetingEdit";
 
 const router = createBrowserRouter([
   {
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
       {
         path: "/meeting-create",
         element: <MeetingCreate />,
+      },
+      {
+        path: "/meetings/edit/:id",
+        element: <MeetingEdit />,
       },
       // [추가] 모임 상세 페이지 라우트
       {

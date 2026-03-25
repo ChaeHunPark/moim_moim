@@ -61,6 +61,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/meetings/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/meetings").authenticated() // 생성은 인증 필수
+                        .requestMatchers(HttpMethod.PUT, "/api/meetings").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/meetings").authenticated()
                         .requestMatchers("/api/test/user").hasRole("USER")
                         .requestMatchers("/api/test/admin").hasRole("ADMIN")
                         .anyRequest().authenticated()

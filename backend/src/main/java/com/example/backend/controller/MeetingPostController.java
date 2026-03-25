@@ -1,16 +1,15 @@
 package com.example.backend.controller;
 
-import com.example.backend.dto.MeetingCreateResponse;
-import com.example.backend.dto.MeetingDetailResponse;
-import com.example.backend.dto.MeetingListResponse;
-import com.example.backend.dto.MeetingPostCreateRequest;
+import com.example.backend.dto.*;
 import com.example.backend.service.MeetingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -43,10 +42,11 @@ public class MeetingPostController {
      * @return 모임 상세 정보 (MeetingDetailResponse)
      */
     @GetMapping("/{id}")
-    public ResponseEntity<MeetingDetailResponse> getMeetingDetail(@PathVariable("id") Long id) {
-        log.info("모임 상세 조회 요청 - ID: {}", id);
-        // 서비스에서 조회수 증가 로직과 데이터 조회 로직이 처리됩니다.
-        MeetingDetailResponse response = meetingService.getMeetingDetail(id);
+    public ResponseEntity<MeetingDetailResponse> getMeetingDetail(
+            @PathVariable("id") Long id,
+            @AuthenticationPrincipal Long memberId) {
+
+        MeetingDetailResponse response = meetingService.getMeetingDetail(id,memberId);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
@@ -59,5 +59,32 @@ public class MeetingPostController {
         List<MeetingListResponse> responses = meetingService.getAllMeetings(sortBy, categoryId);
 
         return ResponseEntity.status(HttpStatus.OK).body(responses);
+    }
+
+    /**
+     * 모임 수정 API
+     * PUT /api/meetings/{meetingId}
+     */
+    @PutMapping("/{meetingId}")
+    public ResponseEntity<Void> updateMeeting(
+            @PathVariable("meetingId") Long meetingId,
+            @Valid @RequestBody MeetingPostUpdateRequest request,
+            @AuthenticationPrincipal Long memberId // 필터에서 저장된 유저 ID 주입
+    ) {
+        meetingService.updateMeeting(meetingId, request, memberId);
+        return ResponseEntity.ok().build(); // 200 OK
+    }
+
+    /**
+     * 모임 삭제 API
+     * DELETE /api/meetings/{meetingId}
+     */
+    @DeleteMapping("/{meetingId}")
+    public ResponseEntity<Void> deleteMeeting(
+            @PathVariable("meetingId") Long meetingId,
+            @AuthenticationPrincipal Long memberId
+    ) {
+        meetingService.deleteMeeting(meetingId, memberId);
+        return ResponseEntity.noContent().build(); // 204 No Content
     }
 }
