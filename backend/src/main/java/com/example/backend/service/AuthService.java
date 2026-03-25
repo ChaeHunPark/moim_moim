@@ -1,5 +1,7 @@
 package com.example.backend.service;
 
+import com.example.backend.common.exception.CustomException;
+import com.example.backend.common.exception.ErrorCode;
 import com.example.backend.common.security.JwtTokenProvider;
 import com.example.backend.dto.RegisterRequest;
 import com.example.backend.dto.TokenResponseDto;
@@ -41,54 +43,37 @@ public class AuthService {
 
     @Transactional
     public TokenResponseDto login(String email, String password) {
-        log.info("1. 로그인 시도 시작 - Email: {}", email);
 
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("가입되지 않은 이메일입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
-        log.info("2. 사용자 조회 완료: {}", member.getEmail());
 
         if (!passwordEncoder.matches(password, member.getPassword())) {
-            log.warn("3. 비밀번호 불일치: {}", email);
-            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+            throw new CustomException(ErrorCode.INVALID_PASSWORD);
         }
-        log.info("4. 비밀번호 일치 확인");
 
         TokenResponseDto tokenDto = jwtTokenProvider.createTokenSet(member.getId(), email, member.getRole().name());
-        log.info("5. JWT 토큰 생성 완료");
 
-        try {
-            redisTemplate.opsForValue().set(
-                    REDIS_RT_PREFIX + email,
-                    tokenDto.getRefreshToken(),
-                    tokenDto.getRefreshTokenExpirationTime(),
-                    TimeUnit.MILLISECONDS
-            );
-            log.info("6. Redis 저장 완료");
-        } catch (Exception e) {
-            log.error("⚠️ Redis 저장 중 에러 발생: {}", e.getMessage());
-            e.printStackTrace();
-            throw e; // 여기서 터지면 401/500의 원인이 됨
-
-        }
+        // Refresh Token Redis 저장
+        redisTemplate.opsForValue().set(
+                REDIS_RT_PREFIX + email,
+                tokenDto.getRefreshToken(),
+                tokenDto.getRefreshTokenExpirationTime(),
+                TimeUnit.MILLISECONDS
+        );
 
         return tokenDto;
     }
 
     @Transactional
     public void register(RegisterRequest request) {
-        log.info("회원가입 시도 - Email: {}, Nickname: {}", request.getEmail(), request.getNickname());
 
         if (memberRepository.existsByEmail(request.getEmail())) {
-            log.warn("회원가입 실패 - 중복 이메일: {}", request.getEmail());
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
 
         Region region = regionRepository.findById(request.getRegionId())
-                .orElseThrow(() -> {
-                    log.error("회원가입 실패 - 존재하지 않는 지역 ID: {}", request.getRegionId());
-                    return new IllegalArgumentException("존재하지 않는 지역입니다.");
-                });
+                .orElseThrow(() -> new CustomException(ErrorCode.REGION_NOT_FOUND));
 
         Member member = Member.builder()
                 .email(request.getEmail())
@@ -109,12 +94,10 @@ public class AuthService {
 
     @Transactional
     public TokenResponseDto reissue(String refreshToken) {
-        log.info("토큰 재발급 시도");
 
         // 1. Refresh Token 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
-            log.warn("재발급 실패 - 유효하지 않은 리프레시 토큰");
-            throw new RuntimeException("리프레시 토큰이 유효하지 않습니다.");
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
         // 2. 이메일 추출 및 Redis 저장값 확인
@@ -122,21 +105,13 @@ public class AuthService {
         String savedToken = redisTemplate.opsForValue().get(REDIS_RT_PREFIX + email);
 
         // 3. 보안 및 만료 체크 (Edge Cases)
-        if (ObjectUtils.isEmpty(savedToken)) {
-            log.warn("재발급 실패 - Redis에 저장된 토큰이 없음: {}", email);
-            throw new RuntimeException("토큰 정보가 만료되었습니다.");
-        }
-
-        if (!savedToken.equals(refreshToken)) {
-            log.error("보안 경고 - 토큰 불일치! 탈취 의심으로 인한 즉시 삭제: {}", email);
+        if (ObjectUtils.isEmpty(savedToken) || !savedToken.equals(refreshToken)) {
             redisTemplate.delete(REDIS_RT_PREFIX + email);
-            throw new RuntimeException("토큰 정보가 일치하지 않습니다.");
+            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
         }
 
-        // [핵심 수정] 4. DB 조회를 통해 최신 ID와 권한 정보를 가져옴
-        // (재발급 시점에도 정확한 ID를 토큰에 심어주기 위함)
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 5. 새로운 토큰 세트 생성 (ID 포함)
         TokenResponseDto newTokenSet = jwtTokenProvider.createTokenSet(
@@ -153,16 +128,11 @@ public class AuthService {
                 TimeUnit.MILLISECONDS
         );
 
-        log.info("토큰 재발급 완료 - Email: {}, MemberID: {}", email, member.getId());
         return newTokenSet;
     }
 
     @Transactional
     public void logout(String accessToken) {
-        if (!jwtTokenProvider.validateToken(accessToken)) {
-            log.warn("로그아웃 시도 실패 - 유효하지 않은 토큰");
-            throw new RuntimeException("유효하지 않은 토큰입니다.");
-        }
 
         String email = jwtTokenProvider.getUserEmail(accessToken);
         Long expiration = jwtTokenProvider.getExpiration(accessToken);
@@ -175,7 +145,5 @@ public class AuthService {
                 expiration,
                 TimeUnit.MILLISECONDS
         );
-
-        log.info("로그아웃 성공 - Email: {}, 블랙리스트 만료시간: {}ms", email, expiration);
     }
 }

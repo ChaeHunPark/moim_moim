@@ -1,5 +1,7 @@
 package com.example.backend.service;
 
+import com.example.backend.common.exception.CustomException;
+import com.example.backend.common.exception.ErrorCode;
 import com.example.backend.dto.MeetingDetailResponse;
 import com.example.backend.dto.MeetingListResponse;
 import com.example.backend.dto.MeetingPostCreateRequest;
@@ -35,11 +37,10 @@ public class MeetingService {
 
     @Transactional
     public Long createMeeting(MeetingPostCreateRequest request, Long memberId) {
-        // 1. 회원 및 카테고리 조회 (존재하지 않으면 404 에러 처리)
         Member creator = memberRepository.findById(memberId)
-                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new EntityNotFoundException("카테고리를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
         // 2. 모임 생성 및 저장
         MeetingPost post = request.toEntity(creator, category);
@@ -59,11 +60,12 @@ public class MeetingService {
         return savedPost.getId();
     }
 
+
     @Transactional(readOnly = true)
     public MeetingDetailResponse getMeetingDetail(Long id) {
         // 1. Fetch Join을 사용하여 Member와 Category를 한 번에 가져오는 레포지토리 메서드 호출
         MeetingPost post = meetingPostRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new EntityNotFoundException("해당 모임을 찾을 수 없습니다. ID: " + id));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEETING_NOT_FOUND));
 
         // 2. [수정] 일관성 있게 바뀐 필드명 매핑
         return MeetingDetailResponse.builder()
