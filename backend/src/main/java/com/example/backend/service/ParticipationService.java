@@ -3,6 +3,7 @@ package com.example.backend.service;
 import com.example.backend.common.exception.CustomException;
 import com.example.backend.common.exception.ErrorCode;
 import com.example.backend.dto.ParticipationRequestDto;
+import com.example.backend.dto.ParticipationResponse;
 import com.example.backend.entity.MeetingPost;
 import com.example.backend.entity.Member;
 import com.example.backend.entity.Participation;
@@ -15,6 +16,9 @@ import com.example.backend.repository.ParticipationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -62,5 +66,54 @@ public class ParticipationService {
         if (acceptedCount >= meetingPost.getCapacity()) {
             throw new CustomException(ErrorCode.MEETING_FULL);
         }
+    }
+
+    /**
+     * 3. 특정 모임의 신청자 명단 조회 (방장 권한 확인 필수)
+     */
+    @Transactional(readOnly = true)
+    public List<ParticipationResponse> getParticipants(Long postId, Long hostId) {
+        MeetingPost post = meetingPostRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEETING_NOT_FOUND));
+
+        // 💡 방장 권한 체크
+        if (!post.getCreator().getId().equals(hostId)) {
+            throw new CustomException(ErrorCode.NOT_AUTHORIZED_PARTICIPATION);
+        }
+
+        return participationRepository.findAllByMeetingPostId(postId).stream()
+                .map(ParticipationResponse::from)
+                .collect(Collectors.toList());
+    }
+
+
+
+    /**
+     * 4. 참여 신청 승인/거절 처리
+     */
+    @Transactional
+    public Long updateParticipationStatus(Long participationId, String statusStr, Long hostId) {
+        Participation participation = participationRepository.findById(participationId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTICIPATION_NOT_FOUND));
+
+        // 💡 권한 체크
+        if (!participation.getMeetingPost().getCreator().getId().equals(hostId)) {
+            throw new CustomException(ErrorCode.NOT_AUTHORIZED_PARTICIPATION);
+        }
+
+        try {
+            ParticipationStatus newStatus = ParticipationStatus.valueOf(statusStr.toUpperCase());
+            participation.updateStatus(newStatus);
+
+            if (newStatus == ParticipationStatus.ACCEPTED) {
+                MeetingPost post = participation.getMeetingPost();
+                post.addParticipant();
+            }
+        } catch (IllegalArgumentException e) {
+            // 💡 잘못된 상태 값 (예: ACCEPTED인데 ACSEPTED로 보낸 경우 등)
+            throw new CustomException(ErrorCode.INVALID_PARTICIPATION_STATUS);
+        }
+
+        return participation.getId();
     }
 }

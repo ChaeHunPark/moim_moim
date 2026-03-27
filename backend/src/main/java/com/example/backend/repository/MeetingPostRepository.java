@@ -1,6 +1,7 @@
 package com.example.backend.repository;
 
 import com.example.backend.entity.MeetingPost;
+import com.example.backend.entity.Participation;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -29,4 +30,17 @@ public interface MeetingPostRepository extends JpaRepository<MeetingPost, Long> 
             "WHERE m.category.id = :categoryId OR :categoryId IS NULL " +
             "ORDER BY (m.capacity - m.currentParticipants) ASC")
     List<MeetingPost> findAllOrderByUrgent(@Param("categoryId") Long categoryId);
+
+    // 💡 내가 만든 모임 찾기 (최신순)
+    List<MeetingPost> findByCreatorIdOrderByCreatedAtDesc(Long creatorId);
+
+    // MeetingPostRepository.java
+    @Query("SELECT p FROM Participation p " +
+            "JOIN FETCH p.meetingPost mp " +
+            "JOIN FETCH mp.category " +
+            "JOIN FETCH mp.creator " +
+            "WHERE p.member.id = :memberId " +
+            "ORDER BY mp.createdAt DESC")
+    List<Participation> findAllAppliedByMemberId(@Param("memberId") Long memberId);
+
 }

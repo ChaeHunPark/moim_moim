@@ -6,13 +6,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-// Static Imports (직접 타이핑하거나 Alt+Enter로 추가)
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -23,7 +25,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+
 @WebMvcTest(ParticipationController.class) // 특정 컨트롤러만 로드하여 가볍게 테스트
+@AutoConfigureMockMvc
 class ParticipationControllerTest {
 
     @Autowired
@@ -63,5 +68,25 @@ class ParticipationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isForbidden()); // 403 혹은 401 확인
+    }
+
+    @Test
+    @DisplayName("참여 신청 상태 변경 성공 - 방장 승인")
+    @WithMockUser(username = "1")
+    void updateStatus_Success() throws Exception {
+        // given
+        Long participationId = 500L;
+        String status = "ACCEPTED";
+        given(participationService.updateParticipationStatus(eq(participationId), eq(status), eq(1L)))
+                .willReturn(participationId);
+
+        // when & then
+        mockMvc.perform(patch("/api/participation/{participationId}/status", participationId)
+                        .with(csrf())
+                        .param("status", status)) // @RequestParam 대응
+                .andExpect(status().isOk())
+                .andExpect(content().string("500"));
+
+        verify(participationService).updateParticipationStatus(eq(500L), eq("ACCEPTED"), eq(1L));
     }
 }

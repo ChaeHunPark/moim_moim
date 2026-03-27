@@ -126,6 +126,43 @@
   text-align: center;
 }
 
+/* Layout.css 에 추가 */
+
+/* 마이페이지 버튼: 테두리만 있는 깔끔한 스타일 */
+.btn-mypage {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 1px solid #e1e4e8;
+  background: #f8f9fa;
+  color: #495057;
+  transition: all 0.2s;
+}
+
+.btn-mypage:hover {
+  background: #e9ecef;
+  border-color: #ced4da;
+}
+
+/* 로그아웃 버튼: 텍스트 형태로 작게 처리 (혹은 btn-login 스타일 재활용) */
+.btn-logout-text {
+  background: none;
+  border: none;
+  color: #adb5bd;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0 5px;
+  text-decoration: underline;
+}
+
+.btn-logout-text:hover {
+  color: #fa5252; /* 호버 시 약간 붉은색으로 경고 느낌 */
+}
+
+
 @media (max-width: 768px) {
   .nav-menu { display: none; } /* 모바일용 햄버거 메뉴는 추후 구현 */
   .footer-inner { grid-template-columns: 1fr; }

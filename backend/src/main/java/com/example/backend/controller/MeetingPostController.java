@@ -87,4 +87,6 @@ public class MeetingPostController {
         meetingService.deleteMeeting(meetingId, memberId);
         return ResponseEntity.noContent().build(); // 204 No Content
     }
+
+
 }

@@ -1,0 +1,293 @@
+/* src/pages/MyPage/MyPage.css */
+
+/* HomePage의 fadeIn 애니메이션 재활용 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mypage-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+/* 💡 프로필 헤더 섹션 (HomePage의 hero-section과 대응) */
+.profile-header-section {
+  text-align: center;
+  padding: 60px 0;
+  background: linear-gradient(135deg, #e3fafc 0%, #ffffff 100%); /* 홈페이지보다 미세하게 더 밝은 하늘색 */
+  border-radius: 32px; /* 동일한 둥근 모서리 */
+  margin-bottom: 40px;
+  animation: fadeIn 0.8s ease-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid #e1e4e8;
+}
+
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  background-color: #1c7ed6; /* HomePage의 카테고리 색상 재활용 */
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 16px rgba(28, 126, 214, 0.2);
+}
+
+.user-email {
+  color: #868e96;
+  margin-bottom: 20px;
+}
+
+.btn-edit-profile {
+  background: none;
+  border: 1px solid #ced4da;
+  padding: 8px 18px;
+  border-radius: 8px;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.btn-edit-profile:hover {
+  background-color: #f1f3f5;
+  border-color: #adb5bd;
+}
+
+/* 💡 탭 메뉴 스타일 */
+.mypage-tabs-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #868e96;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  background-color: #f1f3f5;
+  color: #212529;
+}
+
+.tab-btn.active {
+  background-color: #1c7ed6; /* HomePage 포인트 컬러 */
+  color: white;
+  box-shadow: 0 4px 12px rgba(28, 126, 214, 0.2);
+}
+
+/* 💡 모임 그리드 (HomePage 스타일 완전 재활용) */
+.my-meeting-list-section .meeting-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+/* 💡 마이페이지 전용 카드 스타일 수정 */
+.meeting-card.my-card {
+  background: #fff;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid #e1e4e8;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  /* 마이페이지 카드는 이미지를 빼고 텍스트 중심의 깔끔한 스타일로 구성 */
+}
+
+.meeting-card.my-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+}
+
+.my-card .card-content {
+  padding: 24px; /* 여백을 조금 더 줌 */
+  display: flex;
+  flex-direction: column;
+  min-height: 160px; /* 최소 높이 지정 */
+}
+
+/* HomePage 스타일 재활용 */
+.my-card .card-category {
+  font-size: 0.8rem;
+  color: #1c7ed6;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.my-card .card-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  color: #212529;
+  flex-grow: 1; /* 제목이 영역을 차지하게 함 */
+}
+
+/* 💡 카드 하단 액션 영역 (HomePage의 card-info 위치) */
+.card-footer-action {
+  margin-top: auto; /* 하단에 고정 */
+  padding-top: 15px;
+  border-top: 1px solid #f1f3f5;
+  display: flex;
+  justify-content: flex-end; /* 오른쪽 정렬 */
+  align-items: center;
+}
+
+/* 방장용 관리 버튼 */
+.btn-card-manage {
+  background-color: #f1f3f5;
+  border: 1px solid #ced4da;
+  color: #495057;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-card-manage:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+}
+
+/* 참여자용 상태 배지 */
+.status-badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+
+/* 백엔드 ParticipationStatus와 일치화 */
+.status-badge.APPLIED, .status-badge.WAITING { background-color: #fff9db; color: #856404; } /* 대기/신청: 노란색 */
+.status-badge.ACCEPTED { background-color: #ebfbee; color: #087f23; }                      /* 승인됨: 초록색 */
+.status-badge.REJECTED { background-color: #fff5f5; color: #c92a2a; }                      /* 거절됨: 빨간색 */
+.status-badge.CANCELLED { background-color: #f1f3f5; color: #868e96; }
+
+/* 💡 데이터가 없을 때 스타일 */
+.empty-state {
+  text-align: center;
+  padding: 80px 0;
+  color: #868e96;
+  border: 2px dashed #e1e4e8;
+  border-radius: 20px;
+  background-color: #f8fafc;
+}
+
+.empty-state p {
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+}
+
+.btn-goto-create, .btn-goto-home {
+  background-color: #1c7ed6;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-goto-create:hover, .btn-goto-home:hover {
+  background-color: #1864ab;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #adb5bd;
+}
+
+/* 모달 레이아웃 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: #fff;
+    width: 90%;
+    max-width: 550px;
+    border-radius: 24px;
+    padding: 24px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #f1f3f5;
+    padding-bottom: 15px;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    color: #adb5bd;
+    cursor: pointer;
+}
+
+/* 신청자 리스트 아이템 */
+.participant-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.p-main-info { flex: 1; }
+.p-nick { font-weight: 700; color: #212529; margin-bottom: 4px; }
+.p-reason { font-size: 0.85rem; color: #495057; }
+
+/* 모달 내 버튼 */
+.mini-btn-group { display: flex; gap: 8px; }
+
+.btn-mini-accept {
+    background: #ebfbee; color: #087f23; border: 1px solid #b2f2bb;
+    padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer;
+}
+
+.btn-mini-reject {
+    background: #fff5f5; color: #c92a2a; border: 1px solid #ffc9c9;
+    padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer;
+}
+
+.status-text { font-size: 0.85rem; font-weight: 700; }
+.status-text.ACCEPTED { color: #087f23; }
+.status-text.REJECTED { color: #c92a2a; }

@@ -173,5 +173,31 @@ public class MeetingService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 1. 내가 만든 모임 목록 조회
+     **/
+
+    @Transactional(readOnly = true)
+    public List<MeetingSummaryResponse> getMyCreatedMeetings(Long memberId) {
+        return meetingPostRepository.findByCreatorIdOrderByCreatedAtDesc(memberId)
+                .stream()
+                .map(post -> MeetingSummaryResponse.from(post, true)) // 팩토리 메서드 사용
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 2. 내가 신청한 모임 목록 조회 (참여자)
+     */
+
+    @Transactional(readOnly = true)
+    public List<MeetingSummaryResponse> getMyAppliedMeetings(Long memberId) {
+        return meetingPostRepository.findAllAppliedByMemberId(memberId).stream()
+                .map(MeetingSummaryResponse::from) // 정적 팩토리 메서드 활용
+                .collect(Collectors.toList());
+    }
+
+
+
+
 
 }

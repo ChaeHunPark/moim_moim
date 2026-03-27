@@ -49,4 +49,9 @@ public class Participation extends BaseTimeEntity {
         this.joinReason = joinReason;
         this.ratingGiven = false;
     }
+
+    // 비즈니스 로직은 엔티티 객체 스스로가 처리하게 하는 것이 좋습니다 (객체지향)
+    public void updateStatus(ParticipationStatus newStatus) {
+        this.status = newStatus;
+    }
 }

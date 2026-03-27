@@ -2,8 +2,8 @@ package com.example.backend.common.security;
 
 import com.example.backend.common.exception.CustomJwtException;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONObject;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,6 +16,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /*
 * API 요청은 이필터를 반드시 통과
@@ -23,6 +25,7 @@ import java.io.IOException;
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private final ObjectMapper objectMapper = new ObjectMapper(); // 재사용 가능하게 필드로 둠
 
     private final StringRedisTemplate redisTemplate;
     private final JwtTokenProvider jwtTokenProvider;
@@ -85,12 +88,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setContentType("application/json;charset=UTF-8");
 
         try {
-            JSONObject responseJson = new JSONObject();
-            responseJson.put("status", 401);
-            responseJson.put("code", code); // EXPIRED_TOKEN 또는 INVALID_TOKEN
-            responseJson.put("message", message);
 
-            response.getWriter().print(responseJson.toString());
+            Map<String, Object> errorDetails = new HashMap<>();
+            errorDetails.put("status", HttpServletResponse.SC_UNAUTHORIZED);
+            errorDetails.put("code", code);
+            errorDetails.put("message", message);
+
+            // 💡 ObjectMapper로 Map을 JSON String으로 변환
+            String responseJson = objectMapper.writeValueAsString(errorDetails);
+
+            response.getWriter().print(responseJson);
+            response.getWriter().flush(); // 확실하게 스트림 비우기
         } catch (Exception e) {
             log.error("JSON 응답 생성 중 에러 발생", e);
         }

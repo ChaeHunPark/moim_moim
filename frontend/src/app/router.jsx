@@ -9,6 +9,7 @@ import HomePage from "../pages/Home/HomePage";
 import MeetingDetail from "../pages/Meeting/MeetingDetail";
 import MeetingList from "../pages/Meeting/MeetingList";
 import MeetingEdit from "../pages/Meeting/MeetingEdit";
+import MyPage from "../pages/MyPage/MyPage";
 
 const router = createBrowserRouter([
   {
@@ -41,6 +42,10 @@ const router = createBrowserRouter([
       {
         path: "/meetings",
         element: <MeetingList/>
+      },
+      {
+        path: "/mypage",
+        element: <MyPage/>
       }
     ]
   },

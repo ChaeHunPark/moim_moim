@@ -7,10 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/participation")
@@ -28,5 +25,22 @@ public class ParticipationController {
         Long participationId = participationService.applyForMeeting(requestDto, memberId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(participationId);
+    }
+
+    /**
+     * 2. 참여 신청 승인/거절 처리 (추가)
+     * @param participationId 변경할 신청 고유 ID
+     * @param status "ACCEPTED" 또는 "REJECTED"
+     */
+    @PatchMapping("/{participationId}/status")
+    public ResponseEntity<Long> updateStatus(
+            @PathVariable("participationId") Long participationId,
+            @RequestParam("status") String status,
+            Authentication authentication
+    ) {
+        // 현재 로그인한 사용자가 방장인지 서비스에서 검증해야 함
+        Long hostId = Long.valueOf(authentication.getName());
+        Long updatedId = participationService.updateParticipationStatus(participationId, status, hostId);
+        return ResponseEntity.status(HttpStatus.OK).body(updatedId);
     }
 }

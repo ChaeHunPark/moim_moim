@@ -1,9 +1,14 @@
 package com.example.backend.service;
 
+import com.example.backend.common.exception.CustomException;
+import com.example.backend.common.exception.ErrorCode;
 import com.example.backend.dto.ParticipationRequestDto;
+import com.example.backend.dto.ParticipationResponse;
 import com.example.backend.entity.MeetingPost;
 import com.example.backend.entity.Member;
 import com.example.backend.entity.Participation;
+import com.example.backend.enums.ParticipationRole;
+import com.example.backend.enums.ParticipationStatus;
 import com.example.backend.repository.MeetingPostRepository;
 import com.example.backend.repository.MemberRepository;
 import com.example.backend.repository.ParticipationRepository;
@@ -16,15 +21,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,74 +35,124 @@ class ParticipationServiceTest {
     @InjectMocks
     private ParticipationService participationService;
 
-    @Mock
-    private ParticipationRepository participationRepository;
-    @Mock
-    private MeetingPostRepository meetingPostRepository;
-    @Mock
-    private MemberRepository memberRepository;
+    @Mock private ParticipationRepository participationRepository;
+    @Mock private MeetingPostRepository meetingPostRepository;
+    @Mock private MemberRepository memberRepository;
 
-    private Member member;
+    private Member organizer;
+    private Member applicant;
     private MeetingPost meetingPost;
     private ParticipationRequestDto requestDto;
 
     @BeforeEach
     void setUp() {
-        // 1. 주최자(Creator) 생성
-        Member organizer = Member.builder().build();
-        ReflectionTestUtils.setField(organizer, "id", 999L);
+        // 1. 주최자(Host) 생성
+        organizer = Member.builder().id(999L).nickname("방장").build();
 
         // 2. 신청자(Member) 생성
-        member = Member.builder().build();
-        ReflectionTestUtils.setField(member, "id", 1L);
+        applicant = Member.builder().id(1L).nickname("신청자").build();
 
-        // 3. 모임 게시글 생성 (제공해주신 생성자 구조 반영)
+        // 3. 모임 게시글 생성
         meetingPost = MeetingPost.builder()
                 .title("백엔드 스터디")
-                .description("자바 CS 정복 모임")
-                .capacity(5) // 정원
-                .creator(organizer) // 주최자
+                .capacity(5)
+                .creator(organizer)
                 .build();
         ReflectionTestUtils.setField(meetingPost, "id", 100L);
 
         requestDto = new ParticipationRequestDto(100L, "열심히 참여하겠습니다!");
     }
 
+    // --- 참여 신청 테스트 ---
     @Test
     @DisplayName("참여 신청 성공")
     void applySuccess() {
-        // given
         given(meetingPostRepository.findById(any())).willReturn(Optional.of(meetingPost));
-        given(memberRepository.findById(any())).willReturn(Optional.of(member));
+        given(memberRepository.findById(any())).willReturn(Optional.of(applicant));
         given(participationRepository.existsByMemberIdAndMeetingPostId(any(), any())).willReturn(false);
         given(participationRepository.countByMeetingPostAndStatus(any(), any())).willReturn(3L);
 
-        // [추가] save 호출 시 저장될 객체를 그대로 반환하도록 설정
-        // 만약 ID가 꼭 필요하다면 아래처럼 Mock 객체를 만들어 반환하게 합니다.
         Participation savedParticipation = Participation.builder().build();
-        ReflectionTestUtils.setField(savedParticipation, "id", 500L); // 가짜 ID 심기
-
+        ReflectionTestUtils.setField(savedParticipation, "id", 500L);
         given(participationRepository.save(any(Participation.class))).willReturn(savedParticipation);
 
-        // when
         Long participationId = participationService.applyForMeeting(requestDto, 1L);
 
-        // then
-        assertThat(participationId).isEqualTo(500L); // 반환된 ID 검증
-        verify(participationRepository, times(1)).save(any());
+        assertThat(participationId).isEqualTo(500L);
+        verify(participationRepository).save(any());
     }
 
     @Test
-    @DisplayName("중복 신청 시 예외 발생")
+    @DisplayName("중복 신청 시 ALREADY_PARTICIPATED 예외 발생")
     void duplicateApplyFail() {
-        // given
         given(meetingPostRepository.findById(any())).willReturn(Optional.of(meetingPost));
-        given(memberRepository.findById(any())).willReturn(Optional.of(member));
+        given(memberRepository.findById(any())).willReturn(Optional.of(applicant));
         given(participationRepository.existsByMemberIdAndMeetingPostId(any(), any())).willReturn(true);
 
-        // when & then
         assertThatThrownBy(() -> participationService.applyForMeeting(requestDto, 1L))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("이미 신청 중이거나 참여가 완료된 모임입니다."); // 실제 메시지로 수정
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ALREADY_PARTICIPATED);
+    }
+
+    // --- 신청자 명단 조회 테스트 ---
+    @Test
+    @DisplayName("신청자 명단 조회 성공: 방장이 조회하면 리스트를 반환한다")
+    void getParticipants_success() {
+        Long postId = 100L;
+        Long hostId = 999L; // 방장 ID
+
+        Participation participation = Participation.builder()
+                .member(applicant)
+                .meetingPost(meetingPost)
+                .status(ParticipationStatus.APPLIED)
+                .role(ParticipationRole.PARTICIPANT) // 👈 이 부분이 누락되면 NPE 발생!
+                .joinReason("함께 스터디하고 싶어요")
+                .build();
+        ReflectionTestUtils.setField(participation, "id", 500L);
+
+        given(meetingPostRepository.findById(postId)).willReturn(Optional.of(meetingPost));
+        given(participationRepository.findAllByMeetingPostId(postId)).willReturn(List.of(participation));
+
+        List<ParticipationResponse> result = participationService.getParticipants(postId, hostId);
+
+        assertThat(result.size()).isEqualTo(1);
+        assertThat(result.get(0).getNickname()).isEqualTo("신청자");
+    }
+
+    @Test
+    @DisplayName("신청자 명단 조회 실패: 방장이 아닌 유저가 접근하면 NOT_AUTHORIZED_PARTICIPATION 발생")
+    void getParticipants_fail_notHost() {
+        given(meetingPostRepository.findById(100L)).willReturn(Optional.of(meetingPost));
+
+        assertThatThrownBy(() -> participationService.getParticipants(100L, 1L)) // 신청자 ID로 조회 시도
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOT_AUTHORIZED_PARTICIPATION);
+    }
+
+    // --- 상태 변경 테스트 ---
+    @Test
+    @DisplayName("참여 승인 성공: 상태가 ACCEPTED로 변경된다")
+    void updateStatus_success() {
+        // given
+        Long partId = 500L;
+        Long hostId = 999L;
+
+        Participation participation = Participation.builder()
+                .meetingPost(meetingPost)
+                .status(ParticipationStatus.APPLIED)
+                .build();
+
+        //이 부분이 핵심입니다 엔티티에 ID를 직접 입력
+        // 서비스 로직에서 return participation.getId() 할 때 500L이 나옵니다.
+        ReflectionTestUtils.setField(participation, "id", partId);
+
+        given(participationRepository.findById(partId)).willReturn(Optional.of(participation));
+
+        // when
+        Long resultId = participationService.updateParticipationStatus(partId, "ACCEPTED", hostId);
+
+        // then
+        assertThat(resultId).isEqualTo(partId); // 이제 null이 아니라 500L이 기대됩니다.
+        assertThat(participation.getStatus()).isEqualTo(ParticipationStatus.ACCEPTED);
     }
 }
