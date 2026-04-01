@@ -8,6 +8,8 @@ import com.example.backend.dto.MeetingPostCreateRequest;
 import com.example.backend.dto.MeetingPostUpdateRequest;
 import com.example.backend.service.MeetingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -65,18 +68,48 @@ class MeetingPostControllerTest {
                 .title("러닝 스터디")
                 .categoryName("운동")
                 .currentParticipants(1)
-                .isHost(true) // 💡 새롭게 추가된 필드 설정
+                .isHost(true)
+                .viewCount(10) // 조회수 필드 추가
                 .build();
 
-        // 💡 서비스 호출 시 두 번째 인자로 어떤 String이 와도 response를 반환하도록 설정
-        given(meetingService.getMeetingDetail(eq(meetingId), any())).willReturn(response);
+        // 💡 서비스 파라미터 순서: (id, memberId, request, response)
+        // any()를 사용하여 HttpServletRequest/Response 타입 인자를 수용하도록 설정
+        given(meetingService.getMeetingDetail(eq(meetingId), any(), any(), any())).willReturn(response);
 
         // when & then
         mockMvc.perform(get("/api/meetings/{id}", meetingId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("러닝 스터디"))
                 .andExpect(jsonPath("$.id").value(meetingId))
-                .andExpect(jsonPath("$.host").value(true)); // 💡 isHost 필드 확인 (Boolean은 $.host로 매핑될 수 있음)
+                .andExpect(jsonPath("$.isHost").value(true)) // Jackson 직렬화 설정에 따라 필드명 확인 필요
+                .andExpect(jsonPath("$.viewCount").value(10));
+    }
+
+    @Test
+    @DisplayName("모임 상세 조회 시 조회수 쿠키가 생성되어 응답에 포함된다")
+    void getMeetingDetail_with_cookie_success() throws Exception {
+        // given
+        Long meetingId = 100L;
+        MeetingDetailResponse response = MeetingDetailResponse.builder()
+                .id(meetingId)
+                .viewCount(1)
+                .build();
+
+        // 💡 핵심: 서비스가 호출될 때, 인자로 넘어온 response 객체에 직접 쿠키를 넣어주는 동작을 정의합니다.
+        willAnswer(invocation -> {
+            HttpServletResponse res = invocation.getArgument(3); // 4번째 인자 (index 3)
+            Cookie cookie = new Cookie("postView", "[" + meetingId + "]");
+            cookie.setPath("/");
+            cookie.setMaxAge(60 * 60 * 24);
+            res.addCookie(cookie); // Mock 객체인 response에 쿠키 주입
+            return response;
+        }).given(meetingService).getMeetingDetail(eq(meetingId), any(), any(), any());
+
+        // when & then
+        mockMvc.perform(get("/api/meetings/{id}", meetingId))
+                .andExpect(status().isOk())
+                .andExpect(cookie().exists("postView")) //
+                .andExpect(cookie().value("postView", containsString("[" + meetingId + "]")));
     }
 
     // --- 3. 모임 수정 테스트 (Update) ---

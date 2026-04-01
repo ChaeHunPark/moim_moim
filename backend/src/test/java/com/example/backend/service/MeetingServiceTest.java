@@ -9,6 +9,7 @@ import com.example.backend.repository.CategoryRepository;
 import com.example.backend.repository.MeetingPostRepository;
 import com.example.backend.repository.MemberRepository;
 import com.example.backend.repository.ParticipationRepository;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,9 +17,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -106,5 +110,55 @@ class MeetingServiceTest {
                 .creator(testMember)
                 .category(studyCategory) // 위에서 만든 studyCategory 주입
                 .build();
+    }
+
+    @Test
+    @DisplayName("모임 상세 조회 시 최초 조회라면 조회수가 증가하고 쿠키가 생성된다")
+    void getMeetingDetail_first_view_increases_count() {
+        // 1. Given
+        Long postId = 100L;
+        MeetingPost post = createPost("최초 조회 테스트");
+        ReflectionTestUtils.setField(post, "id", postId);
+        ReflectionTestUtils.setField(post, "viewCount", 0); // 초기 조회수 0
+
+        given(meetingPostRepository.findByIdWithDetails(postId)).willReturn(Optional.of(post));
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // 2. When
+        MeetingDetailResponse result = meetingService.getMeetingDetail(postId, 1L, request, response);
+
+        // 3. Then
+        assertThat(result.getViewCount()).isEqualTo(1); // 조회수 증가 확인
+        Cookie cookie = response.getCookie("postView");
+        assertThat(cookie).isNotNull();
+        assertThat(cookie.getValue()).contains("[" + postId + "]"); // 쿠키에 ID 포함 확인
+    }
+
+    @Test
+    @DisplayName("이미 조회한 이력이 있는 쿠키가 있다면 조회수가 증가하지 않는다")
+    void getMeetingDetail_duplicate_view_no_increase() {
+        // 1. Given
+        Long postId = 100L;
+        MeetingPost post = createPost("중복 조회 테스트");
+        ReflectionTestUtils.setField(post, "id", postId);
+        ReflectionTestUtils.setField(post, "viewCount", 10); // 기존 조회수 10
+
+        given(meetingPostRepository.findByIdWithDetails(postId)).willReturn(Optional.of(post));
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        // 이미 해당 게시글을 본 이력이 있는 쿠키를 요청에 담음
+        Cookie existingCookie = new Cookie("postView", "[" + postId + "]");
+        request.setCookies(existingCookie);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // 2. When
+        MeetingDetailResponse result = meetingService.getMeetingDetail(postId, 1L, request, response);
+
+        // 3. Then
+        assertThat(result.getViewCount()).isEqualTo(10); // 조회수 그대로 (증가 X)
+        // 기존 쿠키가 유지되거나 업데이트됨 (로직에 따라 다름)
     }
 }

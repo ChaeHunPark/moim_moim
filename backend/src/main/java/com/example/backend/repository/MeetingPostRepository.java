@@ -27,14 +27,16 @@ public interface MeetingPostRepository extends JpaRepository<MeetingPost, Long> 
 
     // [특수 정렬] 잔여석 적은 순 (capacity - currentParticipants)
     @Query("SELECT m FROM MeetingPost m " +
-            "WHERE m.category.id = :categoryId OR :categoryId IS NULL " +
+            "JOIN FETCH m.category " +   // ✅ 카테고리 정보 한방에 가져오기
+            "JOIN FETCH m.creator " +    // ✅ 작성자(Member) 정보 한방에 가져오기
+            "WHERE (:categoryId IS NULL OR m.category.id = :categoryId) " +
             "ORDER BY (m.capacity - m.currentParticipants) ASC")
     List<MeetingPost> findAllOrderByUrgent(@Param("categoryId") Long categoryId);
 
     // 💡 내가 만든 모임 찾기 (최신순)
     List<MeetingPost> findByCreatorIdOrderByCreatedAtDesc(Long creatorId);
 
-    // MeetingPostRepository.java
+
     @Query("SELECT p FROM Participation p " +
             "JOIN FETCH p.meetingPost mp " +
             "JOIN FETCH mp.category " +

@@ -14,6 +14,9 @@ import com.example.backend.repository.MeetingPostRepository;
 import com.example.backend.repository.MemberRepository;
 import com.example.backend.repository.ParticipationRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
@@ -114,14 +117,14 @@ public class MeetingService {
     }
 
 
-    @Transactional(readOnly = true)
-    public MeetingDetailResponse getMeetingDetail(Long id, Long currentMemberId) {
+    @Transactional
+    public MeetingDetailResponse getMeetingDetail(Long id, Long currentMemberId, HttpServletRequest request, HttpServletResponse response) {
         // 1. Fetch Join을 사용하여 Member와 Category를 한 번에 가져오는 레포지토리 메서드 호출
         MeetingPost post = meetingPostRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEETING_NOT_FOUND));
 
-        post.incrementViewCount();
-
+        // 2. 조회수 중복 방지 로직 (쿠키 활용)
+        handleViewCountWithCookie(post, id, request, response);
 
         boolean isHost = false;
         if (currentMemberId != null && post.getCreator() != null) {
@@ -131,22 +134,58 @@ public class MeetingService {
         return MeetingDetailResponse.builder()
                 .id(post.getId())
                 .title(post.getTitle())
-                .description(post.getDescription())       // content -> description
-                .capacity(post.getCapacity())             // maxParticipants -> capacity
-                .currentParticipants(post.getCurrentParticipants()) // 현재 참여 인원 추가
-                .viewCount(post.getViewCount())           // 조회수 추가
+                .description(post.getDescription())
+                .capacity(post.getCapacity())
+                .currentParticipants(post.getCurrentParticipants())
+                .viewCount(post.getViewCount())
                 .categoryName(post.getCategory().getName())
                 .categoryId(post.getCategory().getId())
                 .creatorEmail(post.getCreator().getEmail())
-                .startDate(post.getStartDate())           // deadline 대신 명확한 시작일
-                .endDate(post.getEndDate())               // 종료일(마감일)
+                .startDate(post.getStartDate())
+                .endDate(post.getEndDate())
                 .createdAt(post.getCreatedAt())
                 .isHost(isHost)
                 .build();
     }
 
+    /**
+     * 쿠키를 사용하여 24시간 내 중복 조회를 방지하는 프라이빗 메서드
+     */
+    private void handleViewCountWithCookie(MeetingPost post, Long postId, HttpServletRequest request, HttpServletResponse response) {
+        Cookie[] cookies = request.getCookies();
+        Cookie viewCookie = null;
+
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals("postView")) {
+                    viewCookie = cookie;
+                    break;
+                }
+            }
+        }
+
+        if (viewCookie != null) {
+            // 이미 해당 게시글을 본 적이 있는지 확인 (예: [1][2][15])
+            if (!viewCookie.getValue().contains("[" + postId + "]")) {
+                post.incrementViewCount();
+                viewCookie.setValue(viewCookie.getValue() + "[" + postId + "]");
+                viewCookie.setPath("/");
+                viewCookie.setMaxAge(60 * 60 * 24); // 24시간 유지
+                response.addCookie(viewCookie);
+            }
+        } else {
+            // 쿠키가 아예 없는 경우 새로 생성
+            post.incrementViewCount();
+            Cookie newCookie = new Cookie("postView", "[" + postId + "]");
+            newCookie.setPath("/");
+            newCookie.setMaxAge(60 * 60 * 24);
+            response.addCookie(newCookie);
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<MeetingListResponse> getAllMeetings(String sortBy, Long categoryId) {
+
         List<MeetingPost> posts;
 
         // 1. 'urgent' (잔여석 순)은 별도 리포지토리 메서드 호출

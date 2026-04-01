@@ -2,6 +2,8 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.*;
 import com.example.backend.service.MeetingService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,10 +46,12 @@ public class MeetingPostController {
     @GetMapping("/{id}")
     public ResponseEntity<MeetingDetailResponse> getMeetingDetail(
             @PathVariable("id") Long id,
-            @AuthenticationPrincipal Long memberId) {
+            @AuthenticationPrincipal Long memberId,
+            HttpServletRequest request,
+            HttpServletResponse response) {
 
-        MeetingDetailResponse response = meetingService.getMeetingDetail(id,memberId);
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+        MeetingDetailResponse result = meetingService.getMeetingDetail(id, memberId, request, response);
+        return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 
     @GetMapping

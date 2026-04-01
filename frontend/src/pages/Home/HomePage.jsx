@@ -64,8 +64,12 @@ const HomePage = () => {
                                     <div className="card-category">{meeting.categoryName}</div>
                                     <h3 className="card-title">{meeting.title}</h3>
                                     <div className="card-info">
-                                        <span>👤 {meeting.hostName || '작성자'}</span>
+                                        <span>👤 {meeting.creatorNickname || '작성자'}</span>
                                         <span>👥 {meeting.currentParticipants}/{meeting.capacity}</span>
+                                    </div>
+                                    <div className="card-sub-info">
+                                        <span>📅 {new Date(meeting.startDate).toLocaleDateString()}</span>
+                                        <span>👁️ {meeting.viewCount}</span>
                                     </div>
                                 </div>
                             </div>

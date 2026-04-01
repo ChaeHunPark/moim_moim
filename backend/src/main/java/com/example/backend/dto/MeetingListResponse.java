@@ -16,6 +16,7 @@ public class MeetingListResponse {
     private String title;
     private String categoryName;
     private String creatorEmail;
+    private String creatorNickname;
     private int capacity;
     private int currentParticipants;
     private int viewCount;
@@ -35,6 +36,7 @@ public class MeetingListResponse {
                 // Null 발생 가능성이 있는 연관관계는 안전하게 처리
                 .categoryName(post.getCategory() != null ? post.getCategory().getName() : "미지정")
                 .creatorEmail(post.getCreator() != null ? post.getCreator().getEmail() : "알 수 없음")
+                .creatorNickname(post.getCreator().getNickname() != null ? post.getCreator().getNickname() : "탈퇴한 사용자")
                 .capacity(post.getCapacity())
                 .currentParticipants(post.getCurrentParticipants())
                 .viewCount(post.getViewCount())

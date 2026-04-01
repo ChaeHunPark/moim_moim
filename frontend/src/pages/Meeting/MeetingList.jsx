@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-// 💡 중요: 원본 axios 대신 우리가 만든 설정 파일을 가져옵니다.
 import api from '../../api/axios';
 import Swal from 'sweetalert2';
 import './MeetingList.css';
@@ -161,7 +160,7 @@ const MeetingList = () => {
                                     <div className="card-category">{meeting.categoryName}</div>
                                     <h3 className="card-title">{meeting.title}</h3>
                                     <div className="card-info">
-                                        <span>👤 {meeting.hostName}</span>
+                                        <span>👤 {meeting.creatorNickname || '작성자'}</span>
                                         <span>👥 {meeting.currentParticipants}/{meeting.capacity}</span>
                                     </div>
                                     <div className="card-sub-info">
