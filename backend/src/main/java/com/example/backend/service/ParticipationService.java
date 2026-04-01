@@ -28,6 +28,7 @@ public class ParticipationService {
     private final ParticipationRepository participationRepository;
     private final MeetingPostRepository meetingPostRepository; // 게시글 조회용
     private final MemberRepository memberRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public Long applyForMeeting(ParticipationRequestDto requestDto, Long memberId) {
@@ -50,7 +51,17 @@ public class ParticipationService {
                 .joinReason(requestDto.getJoinReason())
                 .build();
 
-        return participationRepository.save(participation).getId();
+        participationRepository.save(participation);
+
+        // 3. 🔔 모임장(Host)에게 알림 생성
+        notificationService.createNotification(
+                meetingPost.getCreator(), // 알림 수신자: 모임 만든 사람
+                "[" + meetingPost.getTitle() + "] 모임에 새로운 참여 신청이 도착했습니다! 📩",
+                "/mypage?tab=hosted" // 모임장이 확인해야 할 페이지
+        );
+
+
+        return participation.getId();
     }
 
     private void validateApplication(MeetingPost meetingPost, Long memberId) {
@@ -108,6 +119,12 @@ public class ParticipationService {
             if (newStatus == ParticipationStatus.ACCEPTED) {
                 MeetingPost post = participation.getMeetingPost();
                 post.addParticipant();
+                // 알림 생성 호출
+                notificationService.createNotification(
+                        participation.getMember(), // 신청자
+                        "[" + participation.getMeetingPost().getTitle() + "] 모임 참여가 승인되었습니다! 🎉",
+                        "/mypage?tab=applied"
+                );
             }
         } catch (IllegalArgumentException e) {
             // 💡 잘못된 상태 값 (예: ACCEPTED인데 ACSEPTED로 보낸 경우 등)

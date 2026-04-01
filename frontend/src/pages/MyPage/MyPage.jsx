@@ -1,20 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios'; 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom'; // 💡 useSearchParams 추가
 import './MyPage.css';
 
 const MyPage = () => {
-    const [activeTab, setActiveTab] = useState('created'); // 'created' | 'applied'
+    const [searchParams] = useSearchParams(); // 💡 URL의 쿼리 스트링을 읽기 위함
+    const navigate = useNavigate();
+
+    // 💡 초기값 설정: URL에 tab 파라미터가 있으면 그 값을, 없으면 'created'를 사용
+    const initialTab = searchParams.get('tab') === 'applied' ? 'applied' : 'created';
+    const [activeTab, setActiveTab] = useState(initialTab); 
+
     const [meetings, setMeetings] = useState([]);
     const [userInfo, setUserInfo] = useState(null);
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
 
     // 💡 모달 관련 상태
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedPostId, setSelectedPostId] = useState(null);
     const [participants, setParticipants] = useState([]);
     const [modalLoading, setModalLoading] = useState(false);
+
+    // 0. 💡 URL 파라미터 변경 감지 (알림 클릭 등으로 탭이 바뀔 때 대응)
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab === 'created' || tab === 'applied') {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
 
     // 1. 유저 정보 로드
     useEffect(() => {
@@ -37,6 +50,7 @@ const MyPage = () => {
     const fetchMyMeetings = async () => {
         setLoading(true);
         try {
+            // 💡 엔드포인트는 기존 그대로 유지
             const endpoint = activeTab === 'created' ? '/mypage/meetings/created' : '/mypage/meetings/applied';
             const response = await api.get(endpoint);
             setMeetings(response.data || []);
@@ -56,7 +70,6 @@ const MyPage = () => {
         try {
             const response = await api.get(`/mypage/meeting/${postId}/participants`);
             setParticipants(response.data);
-            console.log("서버에서 받은 데이터:", response.data); // 👈 이걸 찍어보세요!
         } catch (error) {
             console.error("명단 로딩 실패:", error);
             alert("신청자 명단을 불러오지 못했습니다.");
@@ -74,7 +87,6 @@ const MyPage = () => {
             await api.patch(`/participation/${participationId}/status`, null, {
                 params: { status: newStatus }
             });
-            // 명단 새로고침
             const response = await api.get(`/mypage/meeting/${selectedPostId}/participants`);
             setParticipants(response.data);
         } catch (error) {
@@ -95,7 +107,6 @@ const MyPage = () => {
 
     return (
         <div className="mypage-wrapper">
-            {/* 프로필 섹션 */}
             <header className="profile-header-section">
                 <div className="profile-avatar">
                     {userInfo?.nickname ? userInfo.nickname[0] : 'U'}
@@ -107,7 +118,6 @@ const MyPage = () => {
                 </button>
             </header>
 
-            {/* 탭 버튼 */}
             <div className="mypage-tabs-container">
                 <button 
                     className={`tab-btn ${activeTab === 'created' ? 'active' : ''}`}
@@ -123,7 +133,6 @@ const MyPage = () => {
                 </button>
             </div>
 
-            {/* 목록 섹션 */}
             <section className="my-meeting-list-section">
                 {loading ? (
                     <div className="loading">불러오는 중...</div>
@@ -163,7 +172,6 @@ const MyPage = () => {
                 )}
             </section>
 
-            {/* 💡 신청자 관리 모달 */}
             {isModalOpen && (
                 <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>

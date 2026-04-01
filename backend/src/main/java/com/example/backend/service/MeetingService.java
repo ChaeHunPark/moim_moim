@@ -36,6 +36,7 @@ public class MeetingService {
     private final ParticipationRepository participationRepository;
     private final CategoryRepository categoryRepository;
     private final MemberRepository memberRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public Long createMeeting(MeetingPostCreateRequest request, Long memberId) {

@@ -29,7 +29,11 @@ public enum ErrorCode {
     NOT_AUTHORIZED_PARTICIPATION(403, "PART_002", "참여 신청을 관리할 권한이 없습니다."),
     INVALID_PARTICIPATION_STATUS(400, "PART_003", "잘못된 참여 상태 변경 요청입니다."),
     ALREADY_PARTICIPATED(400, "PART_004", "이미 신청했거나 참여 중인 모임입니다."),
-    MEETING_FULL(400, "PART_005", "모임 정원이 가득 찼습니다.");
+    MEETING_FULL(400, "PART_005", "모임 정원이 가득 찼습니다."),
+
+    // Notification
+    NOTIFICATION_NOT_FOUND(404, "NOTI_001", "해당 알림을 찾을 수 없습니다."),
+    NOT_AUTHORIZED_NOTIFICATION(403, "NOTI_002", "해당 알림에 대한 접근 권한이 없습니다.");
 
     private final int status;
     private final String code;

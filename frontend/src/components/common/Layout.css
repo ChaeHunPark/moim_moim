@@ -167,3 +167,162 @@
   .nav-menu { display: none; } /* 모바일용 햄버거 메뉴는 추후 구현 */
   .footer-inner { grid-template-columns: 1fr; }
 }
+
+/* --- 알림(Notification) 스타일 추가 --- */
+
+.noti-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.btn-noti {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  position: relative;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-noti:hover, .btn-noti.active {
+  background-color: #f1f3f5;
+}
+
+.noti-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background-color: #fa5252; /* 빨간색 느낌표 */
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+}
+
+/* 알림 드롭다운 메인박스 */
+.noti-dropdown {
+  position: absolute;
+  top: 55px;
+  right: 0;
+  width: 320px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+  z-index: 1001;
+  
+  /* 촥 펼쳐지는 애니메이션 */
+  transform-origin: top right;
+  animation: dropDown 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes dropDown {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.noti-header {
+  padding: 16px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border-bottom: 1px solid #f1f3f5;
+  color: #212529;
+}
+
+.noti-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.noti-item {
+  padding: 16px;
+  border-bottom: 1px solid #f8f9fa;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.noti-item:hover {
+  background-color: #f8f9fa;
+}
+
+.noti-item.unread {
+  background-color: #edf2ff; /* 읽지 않은 알림 배경색 */
+}
+
+.noti-item p {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #495057;
+  margin-bottom: 4px;
+}
+
+.noti-item strong {
+  color: #1c7ed6;
+}
+
+.noti-time {
+  font-size: 0.75rem;
+  color: #adb5bd;
+}
+
+.noti-footer {
+  padding: 12px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1c7ed6;
+  background-color: #f8f9fa;
+  cursor: pointer;
+}
+
+.noti-footer:hover {
+  text-decoration: underline;
+}
+
+
+.noti-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.noti-content-wrapper {
+  flex: 1; /* 글자 영역이 최대한 차지하게 함 */
+  margin-right: 10px;
+}
+
+.btn-noti-delete {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: color 0.2s;
+}
+
+.btn-noti-delete:hover {
+  color: #ff4d4f; /* 호버 시 빨간색 */
+}
