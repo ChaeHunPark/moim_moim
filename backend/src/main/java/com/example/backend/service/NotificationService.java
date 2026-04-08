@@ -19,7 +19,7 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
-
+    private final SseService sseService;
     /**
      * 1. 알림 생성 및 저장
      *
@@ -27,7 +27,6 @@ public class NotificationService {
      * @param content  알림 메시지 내용
      * @param url      클릭 시 이동할 경로
      */
-    @Transactional
     public void createNotification(Member receiver, String content, String url) {
         Notification notification = Notification.builder()
                 .receiver(receiver)
@@ -36,7 +35,8 @@ public class NotificationService {
                 .build();
         notificationRepository.save(notification);
 
-        // 💡 SSE 구현 시 여기에 '실시간 전송' 로직이 추가됩니다.
+        // SSE 구현 실시간 전송 이벤트 추가S
+        sseService.send(receiver.getId(), "newNotification", content);
     }
 
     /**

@@ -42,6 +42,7 @@ public interface MeetingPostRepository extends JpaRepository<MeetingPost, Long> 
             "JOIN FETCH mp.category " +
             "JOIN FETCH mp.creator " +
             "WHERE p.member.id = :memberId " +
+            "AND mp.creator.id != :memberId " + // 방장이 본인인 경우는 제외하는 조건
             "ORDER BY mp.createdAt DESC")
     List<Participation> findAllAppliedByMemberId(@Param("memberId") Long memberId);
 

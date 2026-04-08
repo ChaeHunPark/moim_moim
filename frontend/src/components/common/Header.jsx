@@ -6,11 +6,12 @@ import './Layout.css';
 const Header = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  
-  // --- 알림 관련 상태 ---
   const [notifications, setNotifications] = useState([]); 
   const [isNotiOpen, setIsNotiOpen] = useState(false);    
   const notiRef = useRef(null); 
+
+  // 💡 SSE 연결을 관리할 ref (중복 연결 방지 및 클린업 용도)
+  const eventSourceRef = useRef(null);
 
   // 1. 초기 로드 및 로그인 상태 확인
   useEffect(() => {
@@ -20,8 +21,52 @@ const Header = () => {
 
     if (loggedIn) {
       fetchNotifications();
+      // 🚀 로그인 상태라면 SSE 연결 시작
+      connectSSE(token);
     }
+
+    // 언마운트 시 SSE 연결 종료
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
   }, []);
+
+  // 📡 SSE 연결 함수
+const connectSSE = (token) => {
+    if (eventSourceRef.current) return;
+
+    // 💡 주소 뒤에 반드시 토큰이 잘 붙는지 확인!
+    const eventSource = new EventSource(`/api/subscribe?token=${token}`);
+    eventSourceRef.current = eventSource;
+
+    // 연결 확인 로그
+    eventSource.onopen = () => {
+      console.log("✅ SSE 연결이 활성화되었습니다.");
+    };
+
+    // 💡 백엔드의 "newNotification"을 정확히 구독
+    eventSource.addEventListener("newNotification", (event) => {
+      console.log("🔔 SSE 수신 성공! 데이터:", event.data);
+      
+      const newNotiObj = {
+        id: Date.now(),
+        content: event.data, // 백엔드에서 보낸 문자열 데이터
+        url: "/mypage",
+        isRead: false,
+        createdAt: new Date().toISOString()
+      };
+
+      setNotifications(prev => [newNotiObj, ...prev]);
+    });
+
+    eventSource.onerror = (error) => {
+      console.error("❌ SSE 에러 발생:", error);
+      eventSource.close();
+      eventSourceRef.current = null;
+    };
+  };
 
   // 2. 알림 데이터 가져오기 (조회)
   const fetchNotifications = async () => {
@@ -33,7 +78,7 @@ const Header = () => {
     }
   };
 
-  // 3. 외부 클릭 시 알림창 닫기
+  // 3. 외부 클릭 시 알림창 닫기 (기존 로직 유지)
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (notiRef.current && !notiRef.current.contains(e.target)) {
@@ -48,11 +93,9 @@ const Header = () => {
   const handleNotiClick = async (id, url) => {
     try {
       await api.patch(`/notifications/${id}/read`);
-      
       setNotifications(prev => 
         prev.map(n => n.id === id ? { ...n, isRead: true } : n)
       );
-      
       setIsNotiOpen(false);
       navigate(url);
     } catch (error) {
@@ -61,34 +104,31 @@ const Header = () => {
     }
   };
 
-// 5. 알림 삭제 처리 (confirm 창 제거)
+  // 5. 알림 삭제 처리
   const handleNotiDelete = async (e, id) => {
-    e.stopPropagation(); // 알림 클릭 이벤트(이동) 전파 방지
-
+    e.stopPropagation();
     try {
-      // 💡 confirm 없이 바로 API 호출
       await api.delete(`/notifications/${id}`);
-      
-      // 로컬 상태에서 즉시 제거하여 사용자에게 피드백 제공
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (error) {
       console.error("알림 삭제 실패:", error);
-      // 사용자에게 최소한의 에러 알림은 주는 것이 좋습니다.
       alert("알림 삭제에 실패했습니다.");
     }
   };
-
-  // 읽지 않은 알림 개수 계산
-  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   // 6. 로그아웃 처리
   const handleLogout = async () => {
     if (!window.confirm("로그아웃 하시겠습니까?")) return;
     try {
-      await api.post('/logout'); 
+      await api.post('/auth/logout'); 
     } catch (error) {
       console.error("로그아웃 실패:", error);
     } finally {
+      // 💡 로그아웃 시 SSE 연결도 명시적으로 종료
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       setIsLoggedIn(false);
@@ -98,11 +138,12 @@ const Header = () => {
     }
   };
 
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
   return (
     <header className="main-header">
       <div className="header-inner">
         <Link to="/" className="logo">MOIM MOIM</Link>
-        
         <nav>
           <ul className="nav-menu">
             <li className="nav-item" onClick={() => navigate('/meetings')}>모임 찾기</li>
@@ -139,10 +180,9 @@ const Header = () => {
                             <div className="noti-content-wrapper">
                               <p>{n.content}</p>
                               <span className="noti-time">
-                                {n.createdAt.split('T')[0]} 
+                                {n.createdAt?.split('T')[0]} 
                               </span>
                             </div>
-                            {/* 💡 삭제 버튼 추가 */}
                             <button 
                               className="btn-noti-delete"
                               onClick={(e) => handleNotiDelete(e, n.id)}

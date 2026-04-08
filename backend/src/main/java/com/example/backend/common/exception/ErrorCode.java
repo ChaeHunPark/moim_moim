@@ -31,6 +31,11 @@ public enum ErrorCode {
     ALREADY_PARTICIPATED(400, "PART_004", "이미 신청했거나 참여 중인 모임입니다."),
     MEETING_FULL(400, "PART_005", "모임 정원이 가득 찼습니다."),
 
+    // SSE (Server-Sent Events)
+    SSE_CONNECTION_ERROR(500, "SSE_001", "실시간 연결 중 오류가 발생했습니다."),
+    SSE_SEND_ERROR(500, "SSE_002", "알림 전송에 실패했습니다."),
+    SSE_REGISTRY_NOT_FOUND(404, "SSE_003", "등록된 SSE 연결을 찾을 수 없습니다."),
+
     // Notification
     NOTIFICATION_NOT_FOUND(404, "NOTI_001", "해당 알림을 찾을 수 없습니다."),
     NOT_AUTHORIZED_NOTIFICATION(403, "NOTI_002", "해당 알림에 대한 접근 권한이 없습니다.");

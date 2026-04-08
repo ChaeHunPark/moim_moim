@@ -63,6 +63,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/meetings").authenticated() // 생성은 인증 필수
                         .requestMatchers(HttpMethod.PUT, "/api/meetings").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/meetings").authenticated()
+                        // SSE 구독 엔드포인트: 필터에서 토큰을 검증할 것이므로 permitAll() 설정
+                        .requestMatchers("/api/subscribe/**").permitAll()
+                        .requestMatchers("/api/test/**").permitAll()
                         .requestMatchers("/api/test/user").hasRole("USER")
                         .requestMatchers("/api/test/admin").hasRole("ADMIN")
                         .anyRequest().authenticated()

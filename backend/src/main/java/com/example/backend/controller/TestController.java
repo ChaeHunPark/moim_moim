@@ -1,16 +1,19 @@
 package com.example.backend.controller;
 
+import com.example.backend.service.SseService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/test")
+@RequiredArgsConstructor
 public class TestController {
+
+    private final SseService sseService;
 
     @GetMapping("/me")
     public ResponseEntity<?> getMyInfo(@AuthenticationPrincipal String email) {
@@ -31,5 +34,15 @@ public class TestController {
     @GetMapping("/admin")
     public ResponseEntity<String> adminAccess(@AuthenticationPrincipal String email) {
         return ResponseEntity.ok("관리자 접속 성공: " + email);
+    }
+
+    @PostMapping("/send/{memberId}")
+    public void testSend(@PathVariable("memberId") Long memberId) {
+        // 1. memberId = 6
+        // 2. eventName = "newNotification" (프론트 리스너와 동일하게!)
+        // 3. data = "진짜 보내고 싶은 알림 내용"
+        sseService.send(memberId, "newNotification", "드디어 알림 전송에 성공했습니다! 🎉");
+
+        System.out.println("보내기 버튼 눌려쪙");
     }
 }
