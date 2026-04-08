@@ -1,106 +1,69 @@
-# 📂 MoimMoim (모임모임)
-> **"모으고, 모이고, 즐기다."** > 약속 잡기부터 투명한 정산까지, 모임의 모든 과정을 책임지는 올인원 모임 관리 플랫폼
+# 🚀 MoimMoim (모임모임)
+> **"누구나 쉽게 만들고 참여하는 커뮤니티 모임 플랫폼"**
 
-<br/>
+**MoimMoim**은 백엔드 엔지니어로서 기술적 근거를 바탕으로 최적화된 모임 관리 서비스를 제공합니다. 복잡한 참여 프로세스를 단순화하고, **SSE를 통한 실시간 알림**으로 서비스의 생동감을 높였습니다.
 
-## 🔗 Links
-- **Live Demo**: [서비스 연결 링크]
-- **Github (Frontend)**: [프론트엔드 레포 링크]
-- **Github (Backend)**: [백엔드 레포 링크]
+---
 
-<br/>
-
-## 🚀 Project Overview
-- **진행 기간**: 202X.XX ~ 202X.XX (X주)
-- **핵심 목표**: 사용자 간 위치 기반 최적 장소 추천 및 복잡한 정산 프로세스 자동화
-- **인프라 특징**: **Nginx** 리버스 프록시를 활용한 프론트/백엔드 통합 라우팅 환경 구축
-
-<br/>
-
-## 🛠 Tech Stack
+## 🛠️ Tech Stack
+### **Backend**
+* **Framework**: Java 17, Spring Boot 3.4.x
+* **Database**: MySQL 8.0, Redis (Ranking & Cache)
+* **ORM**: Spring Data JPA
+* **Security**: Spring Security, **JWT** (Stateless 인증)
+* **Communication**: **SSE (Server-Sent Events)**
 
 ### **Frontend**
-<img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black"> <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white"> <img src="https://img.shields.io/badge/Styled_Components-DB7093?style=for-the-badge&logo=styled-components&logoColor=white"> <img src="https://img.shields.io/badge/Axios-5A29E4?style=for-the-badge&logo=axios&logoColor=white">
+* **Library**: React, Vite
+* **Communication**: Axios, EventSource
 
-### **Backend & Infra**
-<img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white"> <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white"> <img src="https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white"> <img src="https://img.shields.io/badge/Spring_Security-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white">
+---
 
-<br/>
+## 📂 Project Structure
+역할에 따른 계층 분리를 통해 유지보수성과 확장성을 고려하여 설계되었습니다.
 
-## ✨ Key Features (주요 기능)
+```text
+com.example.backend/
+├── common/             # 글로벌 공통 모듈
+│   ├── config/         # App, Swagger, Redis 등 각종 설정
+│   ├── exception/      # 전역 예외 처리 (GlobalExceptionHandler)
+│   └── security/       # JWT Provider 및 시큐리티 필터
+├── controller/         # API 엔드포인트 레이어
+├── dto/                # 요청/응답 데이터 전송 객체
+├── entity/             # JPA 엔티티 도메인 모델
+│   ├── Member, MeetingPost, Participation
+│   └── Notification, Category, Region, BaseTimeEntity
+├── enums/              # 상태 및 타입 관리를 위한 Enum 모음
+├── repository/         # DB 접근을 위한 Spring Data JPA 인터페이스
+└── service/            # 핵심 비즈니스 로직 및 외부 연동 (SSE 등)
+```
+---
 
-| 기능 | 상세 설명 |
-| :--- | :--- |
-| **📍 중간 지점 추천** | Kakao Map API를 연동하여 멤버별 위치 기반 최적의 모임 장소 추천 |
-| **📅 일정 조율** | 전원이 가능한 시간대를 시각화하여 모임 날짜 확정 기능 제공 |
-| **💰 스마트 정산** | 1/N 자동 계산 및 개인별 정산 상태 실시간 추적 |
-| **🌐 통합 라우팅** | Nginx를 통한 단일 진입점 관리로 보안 및 서비스 운영 효율 증대 |
+## 📌 핵심 MVP 기능 (Current Status)
 
-<br/>
+### 1. 실시간 알림 시스템 (SSE)
+* 사용자의 참여 신청 및 방장의 승인/거절 상태를 **SSE(Server-Sent Events)**를 통해 실시간으로 전달합니다.
+* 커스텀 이벤트(`newNotification`)를 정의하여 데이터 전송의 명확성을 확보했습니다.
 
-## 🔥 Technical Decision & Trouble Shooting
+### 2. 참여 신청 및 승인 프로세스
+* 방장(작성자)은 모임 생성 시 자동으로 참여자로 등록되며, 일반 유저의 신청에 대한 승인/거절 권한을 가집니다.
+* **Query Optimization**: 참여 내역 조회 시 방장 본인을 제외하는 필터링을 통해 UI상의 중복 데이터를 제거했습니다.
 
-### **1. Nginx 리버스 프록시 도입 및 라우팅 최적화**
-- **Issue**: 프론트엔드와 백엔드의 도메인/포트가 달라 발생하는 CORS 이슈와 사용자 엔드포인트 관리의 복잡성 발생.
-- **Solution**: **Nginx**를 리버스 프록시 서버로 설정하여 `/api` 경로는 백엔드로, 그 외 요청은 프론트엔드로 라우팅하도록 구성했습니다.
-- **Result**: 클라이언트에서 CORS 설정을 단순화하고, 단일 도메인을 통해 서비스를 안정적으로 운영할 수 있게 되었습니다.
+### 3. JWT 기반 인증 시스템
+* `JwtAuthenticationFilter`를 통해 무상태(Stateless) 기반의 보안을 구축했습니다.
+* 회원가입, 로그인, 로그아웃 전반의 인증 프로세스를 처리합니다.
 
-### **2. Vite 기반의 빠른 개발 환경 구축**
-- **Decision**: 대규모 라이브러리 로드 시에도 빠른 HMR(Hot Module Replacement)을 유지하기 위해 Vite를 선택했습니다.
-- **Result**: 초기 구동 속도를 크게 개선하여 UI 컴포넌트 개발 효율을 극대화했습니다.
+---
 
-### **3. Styled Components를 통한 테마 시스템**
-- **Decision**: `ThemeProvider`를 활용하여 컬러 팔레트와 폰트 사이즈를 중앙 관리함으로써, 모임 서비스의 아이덴티티를 유지하고 유지보수성을 높였습니다.
+## 💡 Trouble Shooting
+* **SSE 이벤트 리스너 미작동**: 기본 `message` 이벤트가 아닌 커스텀 네이밍을 사용할 때, 송수신 측의 이벤트 이름 불일치 문제를 해결하여 실시간 통신을 성공시켰습니다.
+* **정적 리소스 예외**: 로그아웃 엔드포인트 부재로 인한 `NoResourceFoundException`을 확인하고, API 매핑 및 시큐리티 설정을 통해 정상화했습니다.
+* **참여 목록 데이터 중복**: JPQL에 작성자 제외 조건을 추가하여 비즈니스 로직과 UI 출력 간의 괴리를 해결했습니다.
 
-<br/>
+---
 
-## 🏗 System Architecture
-
-
-
-```mermaid
-graph LR
-    %% 전체 노드 스타일 정의
-    classDef default fill:#fbfbfb,stroke:#2a2a2a,stroke-width:1px,color:#2a2a2a;
-    classDef infra fill:#2a2a2a,stroke:#2a2a2a,stroke-width:2px,color:#fff;
-    classDef front fill:#e1f5fe,stroke:#01579b,stroke-width:1px,color:#01579b;
-    classDef back fill:#e8f5e9,stroke:#1b5e20,stroke-width:1px,color:#1b5e20;
-    classDef db fill:#e0f2f1,stroke:#00695c,stroke-width:2px,color:#00695c;
-    classDef point fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100,stroke-dasharray: 5 5;
-
-    %% 외부 사용자
-    User((User))
-
-    %% 클라우드 인프라 (AWS EC2)
-    subgraph AWS_EC2 [Amazon EC2 Instance]
-        direction TB
-        
-        %% 단일 진입점 (Nginx)
-        Nginx{Nginx Proxy}
-        
-        %% 애플리케이션 서비스 (Docker 컨테이너)
-        subgraph App_Layer [Docker Containers]
-            FE[React + Vite <br/> :5173]
-            BE[Spring Boot <br/> :8080]
-        end
-    end
-
-    %% 데이터 저장소
-    DB[(AWS RDS <br/> MySQL)]
-
-    %% 데이터 흐름 (시인성 중심 배치)
-    User -->|HTTP/HTTPS: 80, 443| Nginx
-    
-    Nginx ---->|Static Hosting| FE
-    Nginx ---->|Reverse Proxy| BE
-    
-    FE -.->|Axios Request| Nginx
-    BE ---->|JPA / JDBC| DB
-
-    %% 스타일 적용
-    class AWS_EC2 point;
-    class Nginx infra;
-    class FE front;
-    class BE back;
-    class DB db;
-    class User default;
+## 📅 Roadmap (Next Steps)
+- [ ] **Scheduler**: 모집 정원 충족 및 기한 만료 시 자동 마감 처리
+- [ ] **Querydsl**: 카테고리/지역별 복합 필터링 및 동적 검색 도입
+- [ ] **Redis**: 조회수 기반 실시간 인기 모임 랭킹 시스템
+- [ ] **AWS S3**: 모임 썸네일 및 프로필 이미지 업로드 연동
