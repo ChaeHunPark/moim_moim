@@ -29,15 +29,5 @@ public class MeetingPostCreateRequest {
     @NotNull(message = "카테고리는 필수입니다.")
     private Long categoryId;
 
-    public MeetingPost toEntity(Member creator, Category category) {
-        return MeetingPost.builder()
-                .title(this.title)
-                .description(this.description) // 이름 일치 완료
-                .capacity(this.capacity)       // 이름 일치 완료
-                .startDate(this.startDate)
-                .endDate(this.endDate)
-                .creator(creator)
-                .category(category)
-                .build();
-    }
+
 }

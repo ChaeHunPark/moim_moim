@@ -8,7 +8,7 @@ import com.example.backend.enums.ParticipationStatus;
 import com.example.backend.repository.CategoryRepository;
 import com.example.backend.repository.MeetingPostRepository;
 import com.example.backend.repository.MemberRepository;
-import com.example.backend.repository.ParticipationRepository;
+import static org.mockito.Mockito.*;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,6 +22,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,6 +33,8 @@ import static org.mockito.BDDMockito.given;
 class MeetingServiceTest {
     @InjectMocks private MeetingService meetingService;
     @Mock private MeetingPostRepository meetingPostRepository;
+    @Mock private MemberRepository memberRepository;
+    @Mock private CategoryRepository categoryRepository;
 
     private Member testMember;
     private Category studyCategory;
@@ -63,6 +66,40 @@ class MeetingServiceTest {
     }
 
     // --- 테스트 케이스 ---
+
+    @Test
+    @DisplayName("새로운 모임 생성 성공 - 생성자가 자동으로 참여자로 등록된다")
+    void createMeeting_success() {
+        // 1. Given
+        Long memberId = 1L;
+        Long categoryId = 1L;
+        Long expectedPostId = 100L;
+
+        MeetingPostCreateRequest request = new MeetingPostCreateRequest(
+                "자바 백엔드 스터디", "설명", 5,
+                LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(30),
+                categoryId
+        );
+
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(testMember));
+        given(categoryRepository.findById(categoryId)).willReturn(Optional.of(studyCategory));
+
+        // 저장 시 ID 100L이 세팅된 객체가 반환된다고 가정
+        given(meetingPostRepository.save(any(MeetingPost.class))).willAnswer(invocation -> {
+            MeetingPost savedPost = invocation.getArgument(0);
+            ReflectionTestUtils.setField(savedPost, "id", expectedPostId);
+            return savedPost;
+        });
+
+        // 2. When (반환 타입을 Long으로 수정)
+        Long resultId = meetingService.createMeeting(request, memberId);
+
+        // 3. ThenS
+        assertThat(resultId).isEqualTo(expectedPostId);
+
+        // 내부적으로 save가 호출되었는지 검증 (NPE 방지 확인)
+        verify(meetingPostRepository, times(1)).save(any(MeetingPost.class));
+    }
 
     @Test
     @DisplayName("내가 만든 모임 목록 조회 성공")

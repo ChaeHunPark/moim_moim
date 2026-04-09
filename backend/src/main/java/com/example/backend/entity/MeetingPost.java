@@ -50,6 +50,7 @@ public class MeetingPost extends BaseTimeEntity {
     @JoinColumn(name = "category_id")
     private Category category;
 
+    @Builder.Default
     @OneToMany(mappedBy = "meetingPost", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Participation> participations = new ArrayList<>();
 
