@@ -1,5 +1,6 @@
 package com.example.backend.dto;
 
+import com.example.backend.entity.MeetingPost;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,4 +28,22 @@ public class MeetingDetailResponse {
     private LocalDateTime createdAt;
     @JsonProperty("isHost") // JSON 키값을 무조건 "isHost"로 고정
     private boolean isHost;
+
+    public static MeetingDetailResponse from(MeetingPost post, boolean isHost) {
+        return MeetingDetailResponse.builder()
+                .id(post.getId())
+                .title(post.getTitle())
+                .description(post.getDescription())
+                .capacity(post.getCapacity())
+                .currentParticipants(post.getCurrentParticipants())
+                .viewCount(post.getViewCount())
+                .categoryName(post.getCategory().getName())
+                .categoryId(post.getCategory().getId())
+                .creatorEmail(post.getCreator().getEmail())
+                .startDate(post.getStartDate())
+                .endDate(post.getEndDate())
+                .createdAt(post.getCreatedAt())
+                .isHost(isHost)
+                .build();
+    }
 }

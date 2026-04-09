@@ -2,6 +2,10 @@ package com.example.backend.entity;
 
 import com.example.backend.common.exception.CustomException;
 import com.example.backend.common.exception.ErrorCode;
+import com.example.backend.dto.MeetingPostCreateRequest;
+import com.example.backend.dto.MeetingPostUpdateRequest;
+import com.example.backend.enums.ParticipationRole;
+import com.example.backend.enums.ParticipationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -49,6 +53,52 @@ public class MeetingPost extends BaseTimeEntity {
     @OneToMany(mappedBy = "meetingPost", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Participation> participations = new ArrayList<>();
 
+    /**
+     * 조회시 뷰 카운팅
+     * */
+    public void incrementViewCount() {
+        this.viewCount++;
+    }
+
+    /**
+     * 모임 생성
+     * */
+    public static MeetingPost createMeeting(MeetingPostCreateRequest request, Member creator, Category category) {
+
+        // 1. 생성 전 파라미터 검증 (static 메서드 호출)
+        validateMinimumCapacity(request.getCapacity());
+        validateDateOrder(request.getStartDate(), request.getEndDate());
+
+        MeetingPost post = MeetingPost.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .capacity(request.getCapacity())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .creator(creator)
+                .category(category)
+                .build();
+
+
+        // 방장을 참여자로 자동 등록하는 규칙을 엔티티 내부에서 수행
+        post.addParticipation(creator, ParticipationRole.ORGANIZER, ParticipationStatus.ACCEPTED, "모임 개설자 자동 등록");
+
+        return post;
+    }
+
+
+    // 참여자 추가를 위한 편의 메서드
+    public void addParticipation(Member member, ParticipationRole role, ParticipationStatus status, String reason) {
+        Participation participation = Participation.builder()
+                .member(member)
+                .meetingPost(this)
+                .role(role)
+                .status(status)
+                .joinReason(reason)
+                .build();
+        this.participations.add(participation);
+    }
+
     @Builder // 생성자의 파라미터명이 빌더 메서드명이 됩니다.
     public MeetingPost(String title, String description, int capacity,
                        LocalDateTime startDate, LocalDateTime endDate,
@@ -67,26 +117,21 @@ public class MeetingPost extends BaseTimeEntity {
      * 모임 정보 수정 (비즈니스 로직)
      * Dirty Checking에 의해 트랜잭션 종료 시 자동으로 DB에 반영됩니다.
      */
-    public void update(String title, String description, int capacity, Category category,
-                       LocalDateTime startDate, LocalDateTime endDate) {
+    public void update(MeetingPostUpdateRequest request, Category category) {
 
-        // [비즈니스 검증] 예: 현재 참여 인원보다 정원을 적게 수정할 수 없음
-        if (capacity < this.currentParticipants) {
-            throw new CustomException(ErrorCode.INVALID_CAPACITY);
-            // ErrorCode에 "현재 참여 인원보다 적은 정원으로 수정할 수 없습니다" 추가 권장
-        }
+        // 1. 최소 인원(2명) 검증
+        validateMinimumCapacity(request.getCapacity());
+        // 2. 현재 참여자 수와 비교 검증
+        validateNewCapacityWithCurrent(request.getCapacity());
 
-        this.title = title;
-        this.description = description;
-        this.capacity = capacity;
+        this.title = request.getTitle();
+        this.description = request.getDescription();
+        this.capacity = request.getCapacity();
         this.category = category;
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.startDate = request.getStartDate();
+        this.endDate = request.getEndDate();
     }
 
-    public void incrementViewCount() {
-        this.viewCount++;
-    }
 
     // 참여 인원 증가 (신규 신청 시 사용)
     public void addParticipant() {
@@ -99,15 +144,37 @@ public class MeetingPost extends BaseTimeEntity {
         this.currentParticipants++;
     }
 
-    private void validateDateOrder(LocalDateTime start, LocalDateTime end) {
+    private static void validateDateOrder(LocalDateTime start, LocalDateTime end) {
         if (start != null && end != null && start.isAfter(end)) {
             throw new IllegalArgumentException("시작 시간은 종료 시간보다 빨라야 합니다.");
         }
     }
 
-    private void validateCapacity(int capacity) {
+    // 참여 인원 검증 1 (생성시 참여인원이 2명보다 많은가)
+    private static void validateMinimumCapacity(int capacity) {
         if (capacity < 2) {
-            throw new IllegalArgumentException("모임 인원은 최소 2명 이상이어야 합니다.");
+            throw new CustomException(ErrorCode.MINIMUM_CAPACITY_REQUIRED);
         }
     }
+
+    // 참여 인원 검증 2 (수정시 현재 인원 승인된 인원보다 적은가)
+    private void validateNewCapacityWithCurrent(int newCapacity) {
+        if (newCapacity < this.currentParticipants) {
+            throw new CustomException(ErrorCode.INVALID_CAPACITY);
+        }
+    }
+
+    // 수정, 삭제등 작성자 권한 검증
+    public void validateCreator(MeetingPost post, Long memberId) {
+        if (!post.getCreator().getId().equals(memberId)) {
+            throw new CustomException(ErrorCode.NOT_MEETING_CREATOR);
+        }
+    }
+    // 호스트 여부 확인
+    public boolean isHost(Long memberId) {
+        if (memberId == null || this.creator == null) return false;
+        return this.creator.getId().equals(memberId);
+    }
+
+
 }

@@ -1,11 +1,15 @@
 package com.example.backend.entity;
 
+import com.example.backend.common.exception.CustomException;
+import com.example.backend.common.exception.ErrorCode;
+import com.example.backend.dto.RegisterRequest;
 import com.example.backend.enums.MemberStatus;
 import com.example.backend.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 
@@ -74,6 +78,32 @@ public class Member {
         this.password = password;
         this.role = (role == null) ? Role.ROLE_USER : role;
     }
+
+    // Member Builder
+    @Builder
+    public static Member createNewMember(RegisterRequest request,
+                                         String encodedPassword,
+                                         Region region) {
+        return Member.builder()
+                .email(request.getEmail())
+                .password(encodedPassword)
+                .nickname(request.getNickname())
+                .age(request.getAge())
+                .introduction(request.getBio())
+                .region(region)
+                .role(Role.ROLE_USER)      // 기본값 캡슐화
+                .status(MemberStatus.ACTIVE) // 기본값 캡슐화
+                .points(0)                 // 기본값 캡슐화
+                .level(1)                  // 기본값 캡슐화
+                .build();
+    }
+
+    public void validatePassword(PasswordEncoder passwordEncoder, String rawPassword) {
+        if (!passwordEncoder.matches(rawPassword, this.password)) {
+            throw new CustomException(ErrorCode.INVALID_PASSWORD);
+        }
+    }
+
 
 
 }
