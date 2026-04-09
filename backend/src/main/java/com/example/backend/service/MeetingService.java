@@ -13,7 +13,7 @@ import com.example.backend.repository.CategoryRepository;
 import com.example.backend.repository.MeetingPostRepository;
 import com.example.backend.repository.MemberRepository;
 import com.example.backend.repository.ParticipationRepository;
-import jakarta.persistence.EntityNotFoundException;
+
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -45,22 +45,11 @@ public class MeetingService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
-        // 2. 모임 생성 및 저장
-        MeetingPost post = request.toEntity(creator, category);
-        MeetingPost savedPost = meetingPostRepository.save(post);
 
-        // 3. 방장을 참여자로 자동 등록 (MVP 핵심 로직)
-        Participation organizer = Participation.builder()
-                .member(creator)
-                .meetingPost(savedPost)
-                .role(ParticipationRole.ORGANIZER)
-                .status(ParticipationStatus.ACCEPTED)
-                .joinReason("모임 개설자 자동 등록")
-                .build();
+        // 엔티티에게 방장을 포함한 모임 생성 위힘
+        MeetingPost post = MeetingPost.createMeeting(request, creator, category);
 
-        participationRepository.save(organizer);
-
-        return savedPost.getId();
+        return meetingPostRepository.save(post).getId();
     }
 
     /**
@@ -75,21 +64,15 @@ public class MeetingService {
                 .orElseThrow(() -> new CustomException(ErrorCode.MEETING_NOT_FOUND));
 
         // 권한 검증
-        validateCreator(post, memberId);
+        post.validateCreator(post, memberId);
 
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
         // 엔티티의 update 메서드로 데이터 위임
-        post.update(
-                request.getTitle(),
-                request.getDescription(),
-                request.getCapacity(),
-                category,
-                request.getStartDate(),
-                request.getEndDate()
-        );
+        post.update(request, category);
     }
+
     /**
      * 모임 삭제
      */
@@ -100,21 +83,12 @@ public class MeetingService {
                 .orElseThrow(() -> new CustomException(ErrorCode.MEETING_NOT_FOUND));
 
         // 2. 작성자 권한 검증
-        validateCreator(post, memberId);
+        post.validateCreator(post, memberId);
 
         // 3. 삭제 수행 (연관된 참여 정보는 JPA Cascade 설정에 따라 처리)
         meetingPostRepository.delete(post);
 
         log.info("모임 삭제 완료 - ID: {}, 삭제자: {}", meetingId, memberId);
-    }
-
-    /**
-     * 작성자 일치 여부 검증 공통 로직
-     */
-    private void validateCreator(MeetingPost post, Long memberId) {
-        if (!post.getCreator().getId().equals(memberId)) {
-            throw new CustomException(ErrorCode.NOT_MEETING_CREATOR);
-        }
     }
 
 
@@ -127,30 +101,16 @@ public class MeetingService {
         // 2. 조회수 중복 방지 로직 (쿠키 활용)
         handleViewCountWithCookie(post, id, request, response);
 
-        boolean isHost = false;
-        if (currentMemberId != null && post.getCreator() != null) {
-            isHost = post.getCreator().getId().equals(currentMemberId);
-        }
+        boolean isHost = post.isHost(currentMemberId);
 
-        return MeetingDetailResponse.builder()
-                .id(post.getId())
-                .title(post.getTitle())
-                .description(post.getDescription())
-                .capacity(post.getCapacity())
-                .currentParticipants(post.getCurrentParticipants())
-                .viewCount(post.getViewCount())
-                .categoryName(post.getCategory().getName())
-                .categoryId(post.getCategory().getId())
-                .creatorEmail(post.getCreator().getEmail())
-                .startDate(post.getStartDate())
-                .endDate(post.getEndDate())
-                .createdAt(post.getCreatedAt())
-                .isHost(isHost)
-                .build();
+        return MeetingDetailResponse.from(post, isHost);
     }
 
     /**
      * 쿠키를 사용하여 24시간 내 중복 조회를 방지하는 프라이빗 메서드
+     *
+     * 웹 기술에 의존적인 로직이라서 ViewCountManager같은 컴포넌트에 넣거나
+     * 인터셉터/AOP로 분리 할 예정
      */
     private void handleViewCountWithCookie(MeetingPost post, Long postId, HttpServletRequest request, HttpServletResponse response) {
         Cookie[] cookies = request.getCookies();
@@ -186,31 +146,32 @@ public class MeetingService {
 
     @Transactional(readOnly = true)
     public List<MeetingListResponse> getAllMeetings(String sortBy, Long categoryId) {
+        // sort를 변수로 추출
+        Sort sort = getSortOrder(sortBy);
 
-        List<MeetingPost> posts;
+        // 카테고리가 있다면 카테고리 + sort
+        // 카테고리가 없다면 sort만
+        List<MeetingPost> posts = (categoryId != null)
+                ? meetingPostRepository.findByCategoryId(categoryId, sort)
+                : meetingPostRepository.findAll(sort);
 
-        // 1. 'urgent' (잔여석 순)은 별도 리포지토리 메서드 호출
+        // 'urgent' 케이스만 따로 처리하는 구조는 유지하되, 전체적으로 stream 활용
         if ("urgent".equalsIgnoreCase(sortBy)) {
             posts = meetingPostRepository.findAllOrderByUrgent(categoryId);
-        }
-        // 2. 그 외 일반 정렬 (latest, closing, popular)
-        else {
-            Sort sort = switch (sortBy.toLowerCase()) {
-                case "closing" -> Sort.by(Sort.Direction.ASC, "startDate");
-                case "popular" -> Sort.by(Sort.Direction.DESC, "viewCount");
-                default -> Sort.by(Sort.Direction.DESC, "createdAt");
-            };
-
-            if (categoryId != null) {
-                posts = meetingPostRepository.findByCategoryId(categoryId, sort);
-            } else {
-                posts = meetingPostRepository.findAll(sort);
-            }
         }
 
         return posts.stream()
                 .map(MeetingListResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    // 정렬 조건 생성 로직 분리 (가독성 향상)
+    private Sort getSortOrder(String sortBy) {
+        return switch (sortBy.toLowerCase()) {
+            case "closing" -> Sort.by(Sort.Direction.ASC, "startDate");
+            case "popular" -> Sort.by(Sort.Direction.DESC, "viewCount");
+            default -> Sort.by(Sort.Direction.DESC, "createdAt");
+        };
     }
 
     /**
