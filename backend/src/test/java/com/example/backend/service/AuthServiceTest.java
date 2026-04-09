@@ -10,6 +10,7 @@ import com.example.backend.entity.Region;
 import com.example.backend.enums.Role;
 import com.example.backend.repository.MemberRepository;
 import com.example.backend.repository.RegionRepository;
+import com.example.backend.repository.TokenRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,22 +40,16 @@ class AuthServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
-    private StringRedisTemplate redisTemplate;
-    @Mock
-    private ValueOperations<String, String> valueOperations;
-    @Mock
     private JwtTokenProvider jwtTokenProvider;
+    // RedisTemplate 대신  토큰 레포지토리 인터페이스를 모킹합니다.
+    @Mock
+    private TokenRepository tokenRepository;
 
     @InjectMocks
     private AuthService authService;
 
-    // Redis opsForValue() 반복 모킹을 위한 헬퍼 메소드
-    private void mockRedis() {
-        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-    }
-
     @Test
-    @DisplayName("로그인 성공 - 토큰을 반환하고 Redis에 리프레시 토큰을 저장한다")
+    @DisplayName("로그인 성공 - 토큰을 반환하고 리프레시 토큰을 저장한다")
     void login_success() {
         // [Given]
         String email = "test@test.com";
@@ -62,19 +57,19 @@ class AuthServiceTest {
         Member member = Member.builder()
                 .id(1L).email(email).password("encoded").role(Role.ROLE_USER).build();
         TokenResponseDto tokenDto = TokenResponseDto.builder()
-                .accessToken("at").refreshToken("rt").refreshTokenExpirationTime(3600L).build();
+                .accessToken("at").refreshToken("rt").build();
 
         when(memberRepository.findByEmail(email)).thenReturn(Optional.of(member));
         when(passwordEncoder.matches(password, member.getPassword())).thenReturn(true);
         when(jwtTokenProvider.createTokenSet(1L, email, "ROLE_USER")).thenReturn(tokenDto);
-        mockRedis();
 
         // [When]
         TokenResponseDto result = authService.login(email, password);
 
         // [Then]
         assertThat(result.getAccessToken()).isEqualTo("at");
-        verify(valueOperations).set(eq("RT:" + email), eq("rt"), anyLong(), eq(TimeUnit.MILLISECONDS));
+        // TokenRepository를 통해 저장되는지 확인
+        verify(tokenRepository).saveRefreshToken(eq(email), any(TokenResponseDto.class));
     }
 
     @Test
@@ -95,44 +90,43 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("재발급 실패 - Redis의 토큰과 일치하지 않으면 EXPIRED_TOKEN 예외가 발생한다")
+    @DisplayName("재발급 실패 - 저장된 토큰과 일치하지 않으면 EXPIRED_TOKEN 예외 발생")
     void reissue_fail_token_mismatch() {
         // [Given]
         String inputToken = "wrong-token";
         String email = "test@test.com";
-        String savedToken = "original-token";
 
-        when(jwtTokenProvider.validateToken(inputToken)).thenReturn(true);
+        doNothing().when(jwtTokenProvider).validateTokenOrThrow(inputToken);
         when(jwtTokenProvider.getUserEmail(inputToken)).thenReturn(email);
-        mockRedis();
-        when(valueOperations.get("RT:" + email)).thenReturn(savedToken);
+
+        // 로직 흐름상 validateRefreshToken에서 먼저 예외가 터진다면
+        // 아래 memberRepository 모킹은 필요 없음
+        // when(memberRepository.findByEmail(email)).thenReturn(Optional.of(member));
+
+        doThrow(new CustomException(ErrorCode.EXPIRED_TOKEN))
+                .when(tokenRepository).validateRefreshToken(email, inputToken);
 
         // [When & Then]
         assertThatThrownBy(() -> authService.reissue(inputToken))
                 .isInstanceOf(CustomException.class)
-                // 💡 서비스 로직에 맞춰 EXPIRED_TOKEN 메시지로 검증
                 .hasMessageContaining(ErrorCode.EXPIRED_TOKEN.getMessage());
-
-        // 보안 조치로 Redis 데이터가 삭제되었는지 확인
-        verify(redisTemplate).delete("RT:" + email);
     }
 
     @Test
-    @DisplayName("로그아웃 성공 - Redis에서 RT를 삭제하고 AT를 블랙리스트에 등록한다")
+    @DisplayName("로그아웃 성공 - RT 삭제 및 블랙리스트 등록")
     void logout_success() {
         // [Given]
         String accessToken = "access-token";
         String email = "test@test.com";
         when(jwtTokenProvider.getUserEmail(accessToken)).thenReturn(email);
         when(jwtTokenProvider.getExpiration(accessToken)).thenReturn(3600L);
-        mockRedis();
 
         // [When]
         authService.logout(accessToken);
 
         // [Then]
-        verify(redisTemplate).delete("RT:" + email);
-        verify(valueOperations).set(eq("BL:" + accessToken), eq("logout"), eq(3600L), eq(TimeUnit.MILLISECONDS));
+        verify(tokenRepository).deleteRefreshToken(email);
+        verify(tokenRepository).addToBlacklist(eq(accessToken), anyLong());
     }
 
     @Test

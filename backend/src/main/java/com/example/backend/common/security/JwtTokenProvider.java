@@ -1,6 +1,8 @@
 package com.example.backend.common.security;
 
+import com.example.backend.common.exception.CustomException;
 import com.example.backend.common.exception.CustomJwtException;
+import com.example.backend.common.exception.ErrorCode;
 import com.example.backend.dto.TokenResponseDto;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -118,22 +120,43 @@ public class JwtTokenProvider {
     }
 
     /**
-     * [검증] 토큰의 변조 여부 및 만료 시간을 체크합니다.
+     * [검증] 토큰의 변조 여부 및 만료 시간을 체크.
+     * Security 필터에서 사용하는 용도
      */
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
-        } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
-            // [변조] 사용자에게 "서명 오류"라고 하기보다 다시 로그인을 권유합니다.
-            throw new CustomJwtException("INVALID_TOKEN", "인증 정보가 유효하지 않습니다. 다시 로그인해 주세요.");
+        } catch (SecurityException | MalformedJwtException e) {
+            log.error("잘못된 JWT 서명입니다.");
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
         } catch (ExpiredJwtException e) {
-            // [만료] 사용자에게 잘못이 없음을 알리고 잠시 기다려달라고 안내합니다.
-            throw new CustomJwtException("EXPIRED_TOKEN", "로그인 세션이 만료되었습니다. 곧 갱신을 시도합니다.");
+            log.error("만료된 JWT 토큰입니다.");
+            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
         } catch (UnsupportedJwtException e) {
-            throw new CustomJwtException("INVALID_TOKEN", "지원되지 않는 인증 형식입니다. 다시 로그인해 주세요.");
+            log.error("지원되지 않는 JWT 토큰입니다.");
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
         } catch (IllegalArgumentException e) {
-            throw new CustomJwtException("INVALID_TOKEN", "잘못된 인증 정보입니다. 다시 로그인해 주세요.");
+            log.error("JWT 토큰이 잘못되었습니다.");
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+    }
+
+    public void validateTokenOrThrow(String token) {
+        try {
+            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+        } catch (SecurityException | MalformedJwtException e) {
+            log.error("잘못된 JWT 서명입니다.");
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        } catch (ExpiredJwtException e) {
+            log.error("만료된 JWT 토큰입니다.");
+            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
+        } catch (UnsupportedJwtException e) {
+            log.error("지원되지 않는 JWT 토큰입니다.");
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        } catch (IllegalArgumentException e) {
+            log.error("JWT 토큰이 잘못되었습니다.");
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
     }
 
@@ -176,6 +199,10 @@ public class JwtTokenProvider {
         Object id = claims.get("id");
         return id != null ? Long.valueOf(id.toString()) : null;
     }
+
+
+
+
 
     /*
     * 테스트용 메서드
