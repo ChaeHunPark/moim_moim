@@ -22,7 +22,8 @@ public enum ErrorCode {
     MEETING_NOT_FOUND(404, "MEETING_001", "해당 모임을 찾을 수 없습니다."),
     CATEGORY_NOT_FOUND(404, "MEETING_002", "카테고리를 찾을 수 없습니다."),
     NOT_MEETING_CREATOR(403, "MEETING_003", "모임 수정/삭제 권한이 없습니다."),
-    INVALID_CAPACITY(400, "MEETING_004", "현재 참여 인원보다 적은 정원으로 수정할 수 없습니다."),
+    MINIMUM_CAPACITY_REQUIRED(400,"MEETING_004","모임 인원은 최소 2명 이상이어야 합니다."),
+    INVALID_CAPACITY(400, "MEETING_005", "현재 참여 인원보다 적은 정원으로 수정할 수 없습니다."),
 
     // Participation
     PARTICIPATION_NOT_FOUND(404, "PART_001", "참여 신청 내역을 찾을 수 없습니다."),
