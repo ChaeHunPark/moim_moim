@@ -43,14 +43,7 @@ public class ParticipationService {
         validateApplication(meetingPost, memberId);
 
         // 3. 참여 정보 생성 및 저장
-        Participation participation = Participation.builder()
-                .member(member)
-                .meetingPost(meetingPost)
-                .role(ParticipationRole.PARTICIPANT)
-                .status(ParticipationStatus.APPLIED) // 초기 상태: 신청완료
-                .joinReason(requestDto.getJoinReason())
-                .build();
-
+        Participation participation = Participation.createApplication(member, meetingPost, requestDto.getJoinReason());
         participationRepository.save(participation);
 
         // 3. 🔔 모임장(Host)에게 알림 생성

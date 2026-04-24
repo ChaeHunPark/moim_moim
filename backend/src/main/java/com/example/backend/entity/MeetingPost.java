@@ -177,5 +177,11 @@ public class MeetingPost extends BaseTimeEntity {
         return this.creator.getId().equals(memberId);
     }
 
+    // 신청 버튼
+    public boolean isFull() {
+        return this.currentParticipants >= this.capacity;
+    }
+
+
 
 }

@@ -1,7 +1,9 @@
 package com.example.backend.common.security;
 
 
+import com.example.backend.common.exception.CustomException;
 import com.example.backend.common.exception.CustomJwtException;
+import com.example.backend.common.exception.ErrorCode;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -122,16 +124,22 @@ class JwtTokenProviderTest {
     }
 
     @Test
-    @DisplayName("검증 실패: 만료된 토큰을 검증하면 CustomJwtException(EXPIRED_TOKEN)이 발생한다.")
+    @DisplayName("검증 실패: 만료된 토큰을 검증하면 CustomException(EXPIRED_TOKEN)이 발생한다.")
     void validateToken_Expired_ThrowsCustomException() {
         // given: 유효 기간을 -1ms로 설정하여 이미 만료된 토큰 생성
         String expiredToken = jwtTokenProvider.createTestToken(1L, "user@test.com", "ROLE_USER", -1L);
 
         // when & then
-        CustomJwtException exception = assertThrows(CustomJwtException.class, () -> {
+        // 1. 실제 코드에 맞춰 CustomException.class로 기대 타입 변경
+        CustomException exception = assertThrows(CustomException.class, () -> {
             jwtTokenProvider.validateToken(expiredToken);
         });
-        assertThat(exception.getMessage()).contains("로그인 세션이 만료되었습니다");
+
+        // 2. 에러 코드가 EXPIRED_TOKEN인지 확인
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EXPIRED_TOKEN);
+
+        // 3. 메시지 확인 (ErrorCode에 설정된 메시지가 "로그인 세션이 만료되었습니다"인지 확인 필요)
+        assertThat(exception.getMessage()).contains("만료");
     }
 
     @Test

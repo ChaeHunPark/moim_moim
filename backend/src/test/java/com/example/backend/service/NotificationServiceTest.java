@@ -29,6 +29,8 @@ class NotificationServiceTest {
 
     @Mock
     private NotificationRepository notificationRepository;
+    @Mock
+    private SseService sseService;
 
     // 가상의 데이터 생성 헬퍼 메서드
     private Member createMember(Long id) {

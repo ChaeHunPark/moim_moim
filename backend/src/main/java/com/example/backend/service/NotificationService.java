@@ -28,11 +28,9 @@ public class NotificationService {
      * @param url      클릭 시 이동할 경로
      */
     public void createNotification(Member receiver, String content, String url) {
-        Notification notification = Notification.builder()
-                .receiver(receiver)
-                .content(content)
-                .url(url)
-                .build();
+
+        Notification notification = new Notification(receiver, content, url);
+
         notificationRepository.save(notification);
 
         // SSE 구현 실시간 전송 이벤트 추가S

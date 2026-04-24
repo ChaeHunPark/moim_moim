@@ -1,5 +1,7 @@
 package com.example.backend.entity;
 
+import com.example.backend.common.exception.CustomException;
+import com.example.backend.common.exception.ErrorCode;
 import com.example.backend.enums.ParticipationRole;
 import com.example.backend.enums.ParticipationStatus;
 import jakarta.persistence.*;
@@ -50,7 +52,26 @@ public class Participation extends BaseTimeEntity {
         this.ratingGiven = false;
     }
 
-    // 비즈니스 로직은 엔티티 객체 스스로가 처리하게 하는 것이 좋습니다 (객체지향)
+    public static Participation createApplication(Member member, MeetingPost post, String joinReason) {
+        // 주최자 신청 불가 검증
+        if (post.getCreator().equals(member)) {
+            throw new CustomException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+        // 정원 초과 검증 (현재 수락된 인원은 post가 관리하도록 설계 가능)
+        if (post.isFull()) {
+            throw new CustomException(ErrorCode.MEETING_FULL);
+        }
+
+        return Participation.builder()
+                .member(member)
+                .meetingPost(post)
+                .role(ParticipationRole.PARTICIPANT)
+                .status(ParticipationStatus.APPLIED)
+                .joinReason(joinReason)
+                .build();
+    }
+
+
     public void updateStatus(ParticipationStatus newStatus) {
         this.status = newStatus;
     }

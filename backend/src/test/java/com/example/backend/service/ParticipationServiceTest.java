@@ -27,7 +27,9 @@ import java.util.Optional;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +37,7 @@ class ParticipationServiceTest {
     @InjectMocks
     private ParticipationService participationService;
 
+    @Mock private NotificationService notificationService;
     @Mock private ParticipationRepository participationRepository;
     @Mock private MeetingPostRepository meetingPostRepository;
     @Mock private MemberRepository memberRepository;
@@ -67,17 +70,24 @@ class ParticipationServiceTest {
     @Test
     @DisplayName("참여 신청 성공")
     void applySuccess() {
+        // 1. Given: 다른 모킹들
         given(meetingPostRepository.findById(any())).willReturn(Optional.of(meetingPost));
         given(memberRepository.findById(any())).willReturn(Optional.of(applicant));
         given(participationRepository.existsByMemberIdAndMeetingPostId(any(), any())).willReturn(false);
-        given(participationRepository.countByMeetingPostAndStatus(any(), any())).willReturn(3L);
 
-        Participation savedParticipation = Participation.builder().build();
-        ReflectionTestUtils.setField(savedParticipation, "id", 500L);
-        given(participationRepository.save(any(Participation.class))).willReturn(savedParticipation);
+        // 2. 핵심 수정 부분: save 메서드가 호출될 때, ID가 세팅된 객체를 반환하도록 함
+        given(participationRepository.save(any(Participation.class))).willAnswer(invocation -> {
+            Participation participation = invocation.getArgument(0);
+            // Reflection을 사용해 ID 강제 주입 (DB가 생성해주는 ID를 흉내냄)
+            ReflectionTestUtils.setField(participation, "id", 500L);
+            return participation;
+        });
 
+        // 3. When
         Long participationId = participationService.applyForMeeting(requestDto, 1L);
 
+        // 4. Then
+        assertThat(participationId).isNotNull(); // 여기서 에러가 났던 것
         assertThat(participationId).isEqualTo(500L);
         verify(participationRepository).save(any());
     }
